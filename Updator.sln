@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Updator.Common", "Updator.Common\Updator.Common.csproj", "{AC9C033F-90EE-453C-B371-D23F8E1126C0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Updator.Uploader", "Updator.Uploader\Updator.Uploader.csproj", "{DEBE7D48-6951-4FDB-8BED-9784C5540662}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{AC9C033F-90EE-453C-B371-D23F8E1126C0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AC9C033F-90EE-453C-B371-D23F8E1126C0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AC9C033F-90EE-453C-B371-D23F8E1126C0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AC9C033F-90EE-453C-B371-D23F8E1126C0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DEBE7D48-6951-4FDB-8BED-9784C5540662}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DEBE7D48-6951-4FDB-8BED-9784C5540662}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DEBE7D48-6951-4FDB-8BED-9784C5540662}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DEBE7D48-6951-4FDB-8BED-9784C5540662}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
