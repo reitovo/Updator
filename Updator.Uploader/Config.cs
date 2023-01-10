@@ -19,6 +19,9 @@ public class Config {
    // Files / directories to ignore in object key format
    public string[] ignored { get; set; } = Array.Empty<string>();
 
+   public string compression { get; set; } = "brotli";
+   public string executable { get; set; }
+
    // The name of storage provider
    public string storage { get; set; } = "cos";
    // tencent cos config ("cos")

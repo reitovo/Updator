@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Updator.Uploader": {
+      "commandName": "Project",
+      "commandLineArgs": "\"C:\\Users\\reito\\Desktop\\VTSLink\\Client\\config.json\""
+    }
+  }
+}
