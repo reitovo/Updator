@@ -1,0 +1,10 @@
+{
+    "githubToken": "ghp_YOUR-GITHUB-TOKEN", 
+    "cos": {
+        "region": "ap-nanjing",
+        "secretId": "YOUR-SECRET-ID",
+        "secretKey": "YOUR-SECRET-KEY",
+        "bucket": "dist-1304010062",
+        "objectKeyPrefix": "downloader/"
+    }
+}
