@@ -13,6 +13,7 @@ public class DistDescription
     public int buildId { get; set; }
     public string channel { get; set; }
     public string compression { get; set; }
+    public string checksum { get; set; }
     public string executable { get; set; }
     public List<DistFile> files { get; set; } = new();
 }

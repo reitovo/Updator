@@ -6,6 +6,7 @@ using COSXML.Model.Object;
 using COSXML.Utils;
 using Updator.Common;
 using Updator.Common.CompressionProvider;
+using System;
 
 namespace Uploader.StorageProvider;
 
@@ -20,7 +21,6 @@ public class TencentCosConfig {
 public class TencentCos : IStorageProvider {
    private TencentCosConfig _config;
    private CosXml _cosXml;
-   private ICompressionProvider _compress = new Raw();
 
    public TencentCos(TencentCosConfig config) {
       _config = config;
@@ -36,38 +36,32 @@ public class TencentCos : IStorageProvider {
       QCloudCredentialProvider qCloudCredentialProvider = new DefaultQCloudCredentialProvider(secretId,
          secretKey, durationSecond);
 
-      Crc64.InitECMA();
       _cosXml = new CosXmlServer(c, qCloudCredentialProvider);
    }
 
-   public void SetCompression(ICompressionProvider compression) {
-      _compress = compression;
-   }
-
    public async Task UploadAsync(string objectKey, Stream fileStream, Action<(long Done, long Total)> progress = null) {
-      try {
-         using var ms = new MemoryStream();
-         await _compress.Compress(fileStream, ms);
-
-         string bucket = _config.bucket; //存储桶，格式：BucketName-APPID
-         string key = $"{_config.objectKeyPrefix}{objectKey}"; //对象键 
-         PutObjectRequest request = new PutObjectRequest(bucket, key, ms);
-         //设置进度回调
-         request.SetCosProgressCallback(delegate(long completed, long total) {
-            Debug.WriteLine($"progress = {completed * 100.0 / total:##.##}%");
-            progress?.Invoke((completed, total));
-         });
-         //执行请求
-         PutObjectResult result = _cosXml.PutObject(request);
-         //打印请求结果
-         Debug.WriteLine(result.GetResultInfo());
-      } catch (COSXML.CosException.CosClientException clientEx) {
-         //请求失败
-         Debug.WriteLine("CosClientException: " + clientEx);
-      } catch (COSXML.CosException.CosServerException serverEx) {
-         //请求失败
-         Debug.WriteLine("CosServerException: " + serverEx.GetInfo());
-      }
+      await Task.Run(() => {
+         try {
+            string bucket = _config.bucket; //存储桶，格式：BucketName-APPID
+            string key = $"{_config.objectKeyPrefix}{objectKey}"; //对象键 
+            PutObjectRequest request = new PutObjectRequest(bucket, key, fileStream);
+            //设置进度回调
+            request.SetCosProgressCallback(delegate(long completed, long total) {
+               Debug.WriteLine($"progress = {completed * 100.0 / total:##.##}%");
+               progress?.Invoke((completed, total));
+            });
+            //执行请求
+            PutObjectResult result = _cosXml.PutObject(request);
+            //打印请求结果
+            Debug.WriteLine(result.GetResultInfo());
+         } catch (COSXML.CosException.CosClientException clientEx) {
+            //请求失败
+            Debug.WriteLine("CosClientException: " + clientEx);
+         } catch (COSXML.CosException.CosServerException serverEx) {
+            //请求失败
+            Debug.WriteLine("CosServerException: " + serverEx.GetInfo());
+         }
+      });
    }
 
    public async Task DownloadAsync(string objectKey, Stream fileStream,
@@ -87,7 +81,7 @@ public class TencentCos : IStorageProvider {
          //请求成功
          Debug.WriteLine(result.GetResultInfo());
 
-         await _compress.Decompress(new MemoryStream(result.content), fileStream);
+         await fileStream.WriteAsync(result.content);
       } catch (COSXML.CosException.CosClientException clientEx) {
          //请求失败
          Debug.WriteLine("CosClientException: " + clientEx);
@@ -122,19 +116,5 @@ public class TencentCos : IStorageProvider {
             return false;
          }
       });
-   }
-
-   public async Task<string> CalculateChecksum(Stream fileStream) {
-      using var ms = new MemoryStream();
-      await _compress.Compress(fileStream, ms);
-
-      ulong crc1 = 0;
-      int num;
-      byte[] numArray = new byte[2048];
-      while ((num = ms.Read(numArray, 0, numArray.Length)) > 0) {
-         ulong crc2 = Crc64.Compute(numArray, 0, num);
-         crc1 = crc1 != 0UL ? Crc64.Combine(crc1, crc2, (long) num) : crc2;
-      }
-      return crc1.ToString();
    }
 }

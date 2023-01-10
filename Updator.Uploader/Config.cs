@@ -18,10 +18,11 @@ public class Config {
 
    // Files / directories to ignore in object key format
    public string[] ignored { get; set; } = Array.Empty<string>();
-
    public string compression { get; set; } = "brotli";
    public string executable { get; set; }
 
+   // Checksum provider, should be used with storage provider
+   public string checksum { get; set; } = "crc64";
    // The name of storage provider
    public string storage { get; set; } = "cos";
    // tencent cos config ("cos")

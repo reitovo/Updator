@@ -1,0 +1,47 @@
+﻿<root>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>1.3</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="SourcesNotFound" xml:space="preserve">
+        <value>找不到 [underline red]sources.json[/]，请重新安装软件</value>
+    </data>
+    <data name="UpdateSourcesJson" xml:space="preserve">
+        <value>[yellow]更新来源[/]</value>
+    </data>
+    <data name="UpdatedSourcesJson" xml:space="preserve">
+        <value>[green]更新来源[/]</value>
+    </data>
+    <data name="ShouldUniqueSource" xml:space="preserve">
+        <value>应当仅存在1个启用的来源，请检查[underline red]sources.json[/]</value>
+    </data>
+    <data name="DownloadDescription" xml:space="preserve">
+        <value>[yellow]更新描述[/]</value>
+    </data>
+    <data name="DownloadedDescription" xml:space="preserve">
+        <value>[green]更新描述[/]</value>
+    </data>
+    <data name="DownloadUpdateFiles" xml:space="preserve">
+        <value>[yellow]更新文件[/]</value>
+    </data>
+    <data name="DownloadedUpdateFiles" xml:space="preserve">
+        <value>[green]更新文件[/]</value>
+    </data>
+    <data name="UpdateDone" xml:space="preserve">
+        <value>[blue]更新完成，启动 {0} 中 [/]</value>
+    </data>
+    <data name="UpdateDownloader" xml:space="preserve">
+        <value>[yellow]发现新版本启动器，是否更新？[/]</value>
+    </data>
+    <data name="CheckDownloaderUpdate" xml:space="preserve">
+        <value>[blue]检查启动器更新[/]</value>
+    </data>
+</root>
