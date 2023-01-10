@@ -63,7 +63,7 @@ Console.WriteLine("Done Tencent Cos");
 
 // this is the core connection
 var connection = new Connection(new ProductHeaderValue("Updator-Publish"),
-   new HttpClientAdapter(() => HttpMessageHandlerFactory.CreateDefault(HttpClient.DefaultProxy)));
+   new HttpClientAdapter(() => HttpMessageHandlerFactory.CreateDefault(new WebProxy() /*HttpClient.DefaultProxy*/)));
 var client = new GitHubClient(connection) {
    Credentials = new Credentials(config.githubToken)
 };
