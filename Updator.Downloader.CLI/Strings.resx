@@ -46,9 +46,18 @@
         <value>[blue]Update complete, launching {0} [/]</value>
     </data>
     <data name="UpdateDownloader" xml:space="preserve">
-        <value>[yellow]Found new version of launcher, update now?[/]</value>
+        <value>[yellow]Found new version of launcher ({0}), update now?[/]</value>
     </data>
     <data name="CheckDownloaderUpdate" xml:space="preserve">
-        <value>[blue]Checking launcher update[/]</value>
+        <value>[blue]Updating launcher[/]</value>
+    </data>
+    <data name="Yes" xml:space="preserve">
+        <value>[green]Yes[/]</value>
+    </data>
+    <data name="No" xml:space="preserve">
+        <value>[red]No[/]</value>
+    </data>
+    <data name="SelfUpdateDone" xml:space="preserve">
+        <value>[green]Self update succeed.[/]</value>
     </data>
 </root>

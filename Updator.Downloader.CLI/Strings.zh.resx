@@ -39,9 +39,18 @@
         <value>[blue]更新完成，启动 {0} 中 [/]</value>
     </data>
     <data name="UpdateDownloader" xml:space="preserve">
-        <value>[yellow]发现新版本启动器，是否更新？[/]</value>
+        <value>[yellow]发现新版本启动器 ({0})，是否更新？[/]</value>
     </data>
     <data name="CheckDownloaderUpdate" xml:space="preserve">
-        <value>[blue]检查启动器更新[/]</value>
+        <value>[blue]更新启动器[/]</value>
+    </data>
+    <data name="No" xml:space="preserve">
+        <value>[red]否[/]</value>
+    </data>
+    <data name="Yes" xml:space="preserve">
+        <value>[green]是[/]</value>
+    </data>
+    <data name="SelfUpdateDone" xml:space="preserve">
+        <value>[green]启动器更新完成[/]</value>
     </data>
 </root>

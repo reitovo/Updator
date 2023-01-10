@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -9,27 +10,72 @@ using Updator.Common.CompressionProvider;
 using Updator.Downloader;
 using Updator.Downloader.CLI;
 
+Console.OutputEncoding = Encoding.UTF8;
+AnsiConsole.Profile.Encoding = Encoding.UTF8;
+
 var downloaderVersion = 1;
-var downloaderUrl = "";
+var downloaderUrl = "https://github.com/cnSchwarzer/Updator/releases/latest/download";
+var projectName = string.Empty;
 
 var configPath = "./sources.json";
 if (!File.Exists(configPath)) {
    AnsiConsole.MarkupLine(Strings.SourcesNotFound);
    return;
 }
+var sources = await JsonSerializer.DeserializeAsync(new MemoryStream(File.ReadAllBytes(configPath)),
+   SourcesSerializer.Default.Sources);
 
-var projectName = string.Empty;
+if (!string.IsNullOrWhiteSpace(sources.customDownloaderUrl)) {
+   downloaderUrl = sources.customDownloaderUrl;
+   Debug.WriteLine($"Using custom downloader url {downloaderUrl}");
+}
+
+if (args.Length == 2) {
+   if (args[0] == "self-update") {
+      await AnsiConsole.Status().Spinner(Spinner.Known.Dots2).StartAsync(Strings.CheckDownloaderUpdate, async ctx => {
+         try {
+            var writeBack = args[1];
+            var env = OperatingSystem.IsWindows() ? "win-x64" :
+               OperatingSystem.IsLinux() ? "linux-x64" :
+               OperatingSystem.IsMacOS() ? "osx-x64" : null;
+            if (env != null) {
+               using var http = new HttpClient();
+               http.Timeout = TimeSpan.FromSeconds(5);
+               var payload = await http.GetByteArrayAsync(Path.Combine(downloaderUrl, $"cli-{env}"));
+               var signature = await http.GetByteArrayAsync(Path.Combine(downloaderUrl, $"cli-{env}.sha512"));
+               var hash = SHA512.HashData(payload);
+               if (hash.SequenceEqual(signature)) {
+                  var file = Path.GetTempFileName();
+                  File.WriteAllBytes(file, payload);
+
+                  while (true) {
+                     try {
+                        File.Move(file, writeBack, true);
+                        break;
+                     } catch (Exception) {
+                        await Task.Delay(TimeSpan.FromSeconds(1));
+                     }
+                  }
+               }
+            }
+         } catch (Exception ex) {
+            AnsiConsole.WriteException(ex);
+         }
+      });
+      AnsiConsole.MarkupLine(Strings.SelfUpdateDone);
+      await Task.Delay(TimeSpan.FromSeconds(3));
+      return;
+   }
+}
 
 await AnsiConsole.Progress()
    .Columns(new TaskDescriptionColumn(), new ProgressBarColumn(), new PercentageColumn(),
-      new SpinnerColumn(Spinner.Known.Earth)).StartAsync(async p => {
-      var sources = await JsonSerializer.DeserializeAsync(new MemoryStream(File.ReadAllBytes(configPath)),
-         SourcesSerializer.Default.Sources);
-
+      new SpinnerColumn(Spinner.Known.Dots2)).StartAsync(async p => {
       var task = p.AddTask(Strings.UpdateSourcesJson);
       if (!string.IsNullOrWhiteSpace(sources.sourcesUrl)) {
          try {
             using var http = new HttpClient();
+            http.Timeout = TimeSpan.FromSeconds(5);
             var newSources = await http.GetByteArrayAsync(sources.sourcesUrl);
             task.Increment(80);
 
@@ -64,6 +110,7 @@ await AnsiConsole.Progress()
 
       try {
          using var http = new HttpClient();
+         http.Timeout = TimeSpan.FromSeconds(1);
          var descBytes = await http.GetByteArrayAsync(Path.Combine(source.distributionUrl, "__description.json"));
          task.Increment(80);
 
@@ -112,7 +159,7 @@ await AnsiConsole.Progress()
 
       task.MaxValue = desc.files.Count;
 
-      await Parallel.ForEachAsync(desc.files, async (f, _) => {
+      await Parallel.ForEachAsync(desc.files, async (f, ct) => {
          var fullPath = new FileInfo(Path.Combine(distRoot, f.objectKey));
          var dir = fullPath.Directory!;
          if (!dir.Exists) {
@@ -124,20 +171,40 @@ await AnsiConsole.Progress()
             download = true;
          } else {
             using var ms = new MemoryStream();
-            await using var fs = fullPath.OpenRead();
+            var fs = fullPath.OpenRead();
             await compress.Compress(fs, ms);
             ms.Position = 0;
             var checksum = await check.CalculateChecksum(ms);
             if (checksum != f.checksum) {
                download = true;
             }
+            await fs.DisposeAsync();
+            fs.Close();
          }
 
          if (download) {
-            using var http = new HttpClient();
-            await using var sr = await http.GetStreamAsync(Path.Combine(source.distributionUrl, f.objectKey));
-            await using var fs = fullPath.OpenWrite();
-            await compress.Decompress(sr, fs);
+            while (true) {
+               try {
+                  using var http = new HttpClient();
+                  http.Timeout = TimeSpan.FromSeconds(5);
+                  var b = await http.GetByteArrayAsync(Path.Combine(source.distributionUrl, f.objectKey));
+                  using var ms = new MemoryStream(b);
+                  ms.Position = 0;
+                  var c = await check.CalculateChecksum(ms);
+                  if (c != f.checksum) {
+                     throw new InvalidDataException("checksum failed");
+                  }
+                  ms.Position = 0;
+                  var fs = fullPath.OpenWrite();
+                  await compress.Decompress(ms, fs);
+                  await fs.DisposeAsync();
+                  fs.Close();
+                  break;
+               } catch (Exception ex) {
+                  AnsiConsole.WriteException(ex);
+                  await Task.Delay(TimeSpan.FromSeconds(1), ct);
+               }
+            }
          }
 
          task.Increment(1);
@@ -151,18 +218,37 @@ await AnsiConsole.Progress()
       });
    });
 
-await AnsiConsole.Status().Spinner(Spinner.Known.Earth).StartAsync(string.Format(Strings.UpdateDone, projectName),
-   async ctx => { await Task.Delay(TimeSpan.FromSeconds(3)); });
+if (!string.IsNullOrWhiteSpace(projectName)) {
+   await AnsiConsole.Status().Spinner(Spinner.Known.Dots2).StartAsync(string.Format(Strings.UpdateDone, projectName),
+      async ctx => { await Task.Delay(TimeSpan.FromSeconds(3)); });
+}
 
-await AnsiConsole.Status().Spinner(Spinner.Known.Earth).StartAsync(Strings.CheckDownloaderUpdate, async ctx => {
+var latestDownloaderVersion = 0;
+await AnsiConsole.Status().Spinner(Spinner.Known.Dots2).StartAsync(Strings.CheckDownloaderUpdate, async ctx => {
    try {
       using var http = new HttpClient();
-
-      var updateSelf = AnsiConsole.Prompt(new SelectionPrompt<string>().Title(Strings.UpdateDownloader).PageSize(10)
-         .AddChoices(new[] {
-            "Apple", "Apricot"
-         }));
+      if (int.TryParse(await http.GetStringAsync(Path.Combine(downloaderUrl, "build-id")), out var v)) {
+         latestDownloaderVersion = v;
+      }
    } catch (Exception ex) {
       AnsiConsole.WriteException(ex);
    }
 });
+
+if (latestDownloaderVersion > downloaderVersion) {
+   var updateSelf = AnsiConsole.Prompt(new SelectionPrompt<string>()
+      .Title(string.Format(Strings.UpdateDownloader, latestDownloaderVersion)).AddChoices(new[] {
+         Strings.Yes, Strings.No
+      }));
+   if (updateSelf == Strings.Yes) {
+      var temp = Path.GetTempFileName() + ".exe";
+      var current = Environment.ProcessPath!;
+      File.Copy(current, temp, true);
+      Process.Start(new ProcessStartInfo() {
+         FileName = temp,
+         Arguments = $"""self-update "{current}" """,
+         CreateNoWindow = false,
+         UseShellExecute = true
+      });
+   }
+}

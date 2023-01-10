@@ -9,6 +9,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Updator.Uploader", "Updator
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Updator.Downloader.CLI", "Updator.Downloader.CLI\Updator.Downloader.CLI.csproj", "{0D3998C5-04BA-4455-85B7-AD4B699392DD}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Updator.Downloader.Publish", "Updator.Downloader.Publish\Updator.Downloader.Publish.csproj", "{862B4ACC-C1B4-430D-91DE-AA95F6DCF24D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{0D3998C5-04BA-4455-85B7-AD4B699392DD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0D3998C5-04BA-4455-85B7-AD4B699392DD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0D3998C5-04BA-4455-85B7-AD4B699392DD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{862B4ACC-C1B4-430D-91DE-AA95F6DCF24D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{862B4ACC-C1B4-430D-91DE-AA95F6DCF24D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{862B4ACC-C1B4-430D-91DE-AA95F6DCF24D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{862B4ACC-C1B4-430D-91DE-AA95F6DCF24D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

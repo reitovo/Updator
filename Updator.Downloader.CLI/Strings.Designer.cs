@@ -60,7 +60,7 @@ namespace Updator.Downloader.CLI {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to [blue]Checking launcher update[/].
+        ///   Looks up a localized string similar to [blue]Updating launcher[/].
         /// </summary>
         internal static string CheckDownloaderUpdate {
             get {
@@ -105,6 +105,24 @@ namespace Updator.Downloader.CLI {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to [red]No[/].
+        /// </summary>
+        internal static string No {
+            get {
+                return ResourceManager.GetString("No", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to [green]Self update succeed.[/].
+        /// </summary>
+        internal static string SelfUpdateDone {
+            get {
+                return ResourceManager.GetString("SelfUpdateDone", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to There should only be one enabled source in [underline red]sources.json[/]. Please check again!.
         /// </summary>
         internal static string ShouldUniqueSource {
@@ -132,7 +150,7 @@ namespace Updator.Downloader.CLI {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to [yellow]Found new version of launcher, update now?[/].
+        ///   Looks up a localized string similar to [yellow]Found new version of launcher ({0}), update now?[/].
         /// </summary>
         internal static string UpdateDownloader {
             get {
@@ -155,6 +173,15 @@ namespace Updator.Downloader.CLI {
         internal static string UpdateSourcesJson {
             get {
                 return ResourceManager.GetString("UpdateSourcesJson", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to [green]Yes[/].
+        /// </summary>
+        internal static string Yes {
+            get {
+                return ResourceManager.GetString("Yes", resourceCulture);
             }
         }
     }
