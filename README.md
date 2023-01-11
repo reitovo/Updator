@@ -7,6 +7,7 @@ The project contains:
 - `publisher` for publish downloader itself. Could be helpful if you need to publish your own downloader.
 
 All of them are CLI applications.
+![QQ截图20230111140134](https://user-images.githubusercontent.com/29846655/211729461-8b4b7194-1f3f-40a1-b9f6-a1135fe587f7.png)
 
 ## Uploader
 The program reads `config.json` to upload specified folder to cloud.
