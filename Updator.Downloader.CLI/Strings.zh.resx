@@ -39,7 +39,7 @@
         <value>[blue]更新完成，启动 {0} 中 [/]</value>
     </data>
     <data name="UpdateDownloader" xml:space="preserve">
-        <value>[yellow]发现新版本启动器 ({0})，是否更新？[/]</value>
+        <value>[yellow]发现新版本启动器 ({0} -&gt; {1})，是否更新？[/]</value>
     </data>
     <data name="CheckDownloaderUpdate" xml:space="preserve">
         <value>[blue]更新启动器[/]</value>
@@ -61,5 +61,8 @@
     </data>
     <data name="KillWhenTooLong" xml:space="preserve">
         <value>[yellow]如遇更新卡住时间过长，请重新打开本程序[/]</value>
+    </data>
+    <data name="DonwloaderUpdateFailed" xml:space="preserve">
+        <value>[red]启动器更新失败，请前往软件官网下载新版本[/]</value>
     </data>
 </root>

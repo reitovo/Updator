@@ -1,5 +1,6 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net;
 using System.Security.Cryptography;
@@ -7,12 +8,16 @@ using System.Text;
 using System.Text.Json;
 using Octokit;
 using Octokit.Internal;
+using Updator.Downloader.CLI;
 using Updator.Downloader.Publish;
 using Uploader.StorageProvider;
+
+Console.OutputEncoding = Encoding.UTF8;
 
 var buildId = DownloaderMeta.Version;
 var projectDir = args[0];
 var publishDir = Path.Combine(projectDir, "bin/Publish");
+Directory.Delete(Path.Combine(projectDir, "bin/Release/net7.0"), true);
 Directory.Delete(publishDir, true);
 Directory.CreateDirectory(publishDir);
 
@@ -31,35 +36,40 @@ async Task Publish(string runtime) {
       StandardErrorEncoding = Encoding.UTF8
    })!;
    await proc.WaitForExitAsync();
-   //Console.WriteLine(await proc.StandardOutput.ReadToEndAsync());
-   //Console.WriteLine(await proc.StandardError.ReadToEndAsync());
+   Console.WriteLine(await proc.StandardOutput.ReadToEndAsync());
+   Console.WriteLine(await proc.StandardError.ReadToEndAsync());
 }
 
 var osList = new string[] {"win-x64", "osx-x64", "linux-x64"};
-foreach (var os in osList) {
-   Console.WriteLine($"Publish {os}");
+await Parallel.ForEachAsync(osList, new ParallelOptions() {MaxDegreeOfParallelism = 1}, async (os, _) => {
+   Console.WriteLine($@"Publish {os}");
    await Publish(os);
    var outputFile = Path.Combine(projectDir, $"bin/Release/net7.0/{os}/publish/Updator.Downloader.CLI");
    if (os == "win-x64") {
       outputFile += ".exe";
    }
-   File.Copy(outputFile, Path.Combine(publishDir, $"cli-{os}"));
+   File.Copy(outputFile, Path.Combine(publishDir, $"cli-{os}"), true);
    var hash = SHA512.HashData(File.ReadAllBytes(outputFile));
    File.WriteAllBytes(Path.Combine(publishDir, $"cli-{os}.sha512"), hash);
-}
+});
 File.WriteAllText(Path.Combine(publishDir, $"build-id"), buildId.ToString());
 
-Console.WriteLine("Done Generate");
+Console.WriteLine(@"Done Generate");
 
-Console.WriteLine("Upload Tencent Cos");
+Console.WriteLine(@"Upload Tencent Cos");
 
-foreach (var f in new DirectoryInfo(publishDir).GetFiles()) {
-   Console.WriteLine($"Upload Tencent Cos {f.Name}");
+ConcurrentBag<string> keys = new();
+await Parallel.ForEachAsync(new DirectoryInfo(publishDir).GetFiles(), async (f, _) => {
+   Console.WriteLine($@"Upload Tencent Cos {f.Name}");
    await using var fs = f.OpenRead();
    await storage.UploadAsync(f.Name, fs);
-}
+   keys.Add(f.Name);
+});
 
-Console.WriteLine("Done Tencent Cos");
+Console.WriteLine(@"Refresh CDN");
+await storage.RefreshObjectKeys(keys);
+
+Console.WriteLine(@"Done Tencent Cos");
 
 // this is the core connection
 var connection = new Connection(new ProductHeaderValue("Updator-Publish"),
@@ -71,14 +81,14 @@ var client = new GitHubClient(connection) {
 var tag = $"build-id-{buildId}";
 var repo = await client.Repository.Get("cnSchwarzer", "Updator");
 try {
-   Console.WriteLine($"Delete Github Release {tag}");
+   Console.WriteLine($@"Delete Github Release {tag}");
    var rel = await client.Repository.Release.Get(repo.Id, tag);
    await client.Repository.Release.Delete(repo.Id, rel.Id);
 } catch (Exception) {
    // ignored
 }
 
-Console.WriteLine($"Create Github Release {tag}");
+Console.WriteLine($@"Create Github Release {tag}");
 var body = $"""
                 # Updator Downloader Release
                 Build ID: {buildId}
@@ -89,11 +99,11 @@ var release = await client.Repository.Release.Create(repo.Id, new NewRelease(tag
    Name = tag
 });
 
-foreach (var f in new DirectoryInfo(publishDir).GetFiles()) {
-   Console.WriteLine($"Upload Github {f.Name}");
+await Parallel.ForEachAsync(new DirectoryInfo(publishDir).GetFiles(), async (f, _) => {
+   Console.WriteLine($@"Upload Github {f.Name}");
    await using var fs = f.OpenRead();
    await client.Repository.Release.UploadAsset(release,
       new ReleaseAssetUpload(f.Name, "application/octet-stream", fs, null));
-}
+});
 
-Console.WriteLine("Done Upload Github");
+Console.WriteLine(@"Done Upload Github");

@@ -5,6 +5,7 @@
         "secretId": "YOUR-SECRET-ID",
         "secretKey": "YOUR-SECRET-KEY",
         "bucket": "dist-1304010062",
-        "objectKeyPrefix": "downloader/"
+        "objectKeyPrefix": "downloader/",
+        "cdnRefreshRoot": "https://dist.reito.fun/downloader"
     }
 }

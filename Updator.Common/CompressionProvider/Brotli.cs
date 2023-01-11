@@ -7,6 +7,7 @@ public class Brotli : ICompressionProvider {
       var zipStream = new BrotliStream(dst, CompressionLevel.Optimal, true);
       await src.CopyToAsync(zipStream);
       await zipStream.FlushAsync();
+      await dst.FlushAsync();
       await zipStream.DisposeAsync();
       zipStream.Close();
    }
@@ -15,6 +16,7 @@ public class Brotli : ICompressionProvider {
       var zipStream = new BrotliStream(src, CompressionMode.Decompress, true);
       await zipStream.CopyToAsync(dst);
       await zipStream.FlushAsync();
+      await dst.FlushAsync();
       await zipStream.DisposeAsync();
       zipStream.Close();
    }

@@ -46,7 +46,7 @@
         <value>[blue]Update complete, launching {0} [/]</value>
     </data>
     <data name="UpdateDownloader" xml:space="preserve">
-        <value>[yellow]Found new version of launcher ({0}), update now?[/]</value>
+        <value>[yellow]Found new version of launcher ({0} -> {1}), update now?[/]</value>
     </data>
     <data name="CheckDownloaderUpdate" xml:space="preserve">
         <value>[blue]Updating launcher[/]</value>
@@ -68,5 +68,8 @@
     </data>
     <data name="KillWhenTooLong" xml:space="preserve">
         <value>[yellow]Restart application if it seems stucked for too long[/]</value>
+    </data>
+    <data name="DonwloaderUpdateFailed" xml:space="preserve">
+        <value>[red]Update launcher failed, please visit software website to manually update.[/]</value>
     </data>
 </root>

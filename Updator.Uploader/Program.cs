@@ -113,7 +113,10 @@ if (config.autoIncreaseBuildId) {
 ConcurrentBag<string> uploadedObjectKeys = new();
 await Parallel.ForEachAsync(root.Items, async (item, _) => {
    using var ms = new MemoryStream();
-   await compress.Compress(item.fileInfo.OpenRead(), ms);
+   var fs = item.fileInfo.OpenRead();
+   await compress.Compress(fs, ms);
+   await fs.DisposeAsync();
+   fs.Close();
    ms.Position = 0;
    var checksum = await check.CalculateChecksum(ms);
 

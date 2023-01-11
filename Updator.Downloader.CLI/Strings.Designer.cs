@@ -69,6 +69,15 @@ namespace Updator.Downloader.CLI {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to [red]Update launcher failed, please visit software website to manually update.[/].
+        /// </summary>
+        internal static string DonwloaderUpdateFailed {
+            get {
+                return ResourceManager.GetString("DonwloaderUpdateFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to [yellow]Downloading description[/].
         /// </summary>
         internal static string DownloadDescription {
@@ -168,7 +177,7 @@ namespace Updator.Downloader.CLI {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to [yellow]Found new version of launcher ({0}), update now?[/].
+        ///   Looks up a localized string similar to [yellow]Found new version of launcher ({0} -&gt; {1}), update now?[/].
         /// </summary>
         internal static string UpdateDownloader {
             get {
