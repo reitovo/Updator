@@ -6,8 +6,8 @@ The project contains:
 - `downloader` for downloading releases, currently it use http(s) to download from links.
 - `publisher` for publish downloader itself. Could be helpful if you need to publish your own downloader.
 
-All of them are CLI applications.
-![QQ截图20230111140134](https://user-images.githubusercontent.com/29846655/211729461-8b4b7194-1f3f-40a1-b9f6-a1135fe587f7.png)
+All of them are CLI applications. 
+![QQ截图20230111140207](https://user-images.githubusercontent.com/29846655/211729573-bf918ca9-0706-4951-9aa5-3d4e6f9a1308.png)
 
 ## Uploader
 The program reads `config.json` to upload specified folder to cloud.
