@@ -1,18 +1,21 @@
 # Updator
-Very simple but straight forward application updater!
+简单易用的应用更新器。帮助你解决分发应用的最后一步，只需简单配置即可上传应用至云服务，支持压缩，并且在客户端仅更新差异文件以节约流量。
 
-The project contains:
-- `uploader` for uploading releases to cloud, currently only `tencent-cloud-cos` is supported, but it is easy to support more.
-- `downloader` for downloading releases, currently it use http(s) to download from links.
-- `publisher` for publish downloader itself. Could be helpful if you need to publish your own downloader.
+[English](README.en.md)
 
-All of them are CLI applications.  
-![Screenshot 2023-01-11 140830](https://user-images.githubusercontent.com/29846655/211730508-fb8ac360-2de6-401e-a5ff-489608ef8663.png)
+本项目包含:
+- `uploader` 用来上传你的应用至一个云端，目前支持`腾讯云COS`且支持CDN刷新，采用接口设计，也可以很快地为其他云端实现上传机制。
+- `downloader` 用来提供给用户下载你的应用，目前使用纯HTTP(S)下载，因为云服务对象储存通常都是这种方式
+- `publisher` 用来分发 `downloader`，因为其支持自我更新。如果你想开发自己的 `downloader` 其可以协助你进行分发流水线。
 
-## Uploader
-The program reads `config.json` to upload specified folder to cloud.
+以上全是控制台应用，使用了 [Spectre.Console](https://spectreconsole.net/) 进行美化
 
-An example:
+![QQ截图20230111140207](https://user-images.githubusercontent.com/29846655/211731428-c8034a7a-d7fc-46ce-8a18-1ac3b09b69a6.png)
+
+## Uploader 
+程序通过解析 `config.json` 来上传至一个云服务
+
+配置文件样例：
 ```json
 {
   "projectName": "弹幕姬",
@@ -66,19 +69,15 @@ An example:
 }
 ```
 
-One can extend the ability of this app by adding providers to `StorageProvider`, `CompressionProvider`, `ChecksumProvider`.
+通过开发新的 `StorageProvider`, `CompressionProvider`, `ChecksumProvider`，可以很快的集成其他云服务到本项目，欢迎PR！ 
 
-Currently supported providers:
-- `cos`: Tencent cloud COS, also support refreshing CDN if you use such service. 
+当前支持的云服务：
+- `cos`: 腾讯云COS，支持CDN刷新
 
-## Downloader
-It reads `sources.json` to download from specified url. Then downloads the `<DISTRIBUTION-URL>/__description.json` to get all metadata about the distribution, compare and download all files needed.
+## Downloader 
+程序读取 `sources.json` 去下载你的应用。
 
-It can also self-update `sources.json` by specifying `sourcesUrl`.
-
-It can for sure update downloader itself, by default, it reads from github release, but you can also specify `customDownloaderUrl` to build your own downloader or speed up the upgrade.
-
-An example:
+配置文件样例：
 ```json
 {
     "version": 4, 
@@ -92,5 +91,12 @@ An example:
     ]
 }
 ```
+
+通过配置 `distributionUrl`，程序下载`<DISTRIBUTION-URL>/__description.json`来获取上传的应用元数据，并且对现有文件进行比较，对差异文件进行下载更新
+
+通过配置 `sourcesUrl`，程序可以对 `sources.json` 进行自动更新
+
+通过配置 `customDownloaderUrl`，程序可以访问该地址进行启动器的自我更新，默认是通过本github仓库的release进行更新
+
 ## Publisher
-It contains a publish helper to publish the downloader to platforms, and upload to tencent-cos and github. It reads tokens from config.json by passing the file's path as arg. The program could be useful if you want to publish your own downloader.
+这是一个流水线应用，用来把 `downloader` 发布到github以及腾讯云COS上，如果你需要分发自己的 `downloader` 他或许可以帮你自动化完成一些操作
