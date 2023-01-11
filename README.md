@@ -1,15 +1,14 @@
 # Updator
-Very simple but straight forward application updator
+Very simple but straight forward application updater!
 
 The project contains:
-- an uploader for uploading releases to cloud, currently only `tencent-cloud-cos` is supported, but it is easy to support more.
-- A downloader for downloading releases, currently it use http(s) to download from links.
+- `uploader` for uploading releases to cloud, currently only `tencent-cloud-cos` is supported, but it is easy to support more.
+- `downloader` for downloading releases, currently it use http(s) to download from links.
+- `publisher` for publish downloader itself. Could be helpful if you need to publish your own downloader.
 
-Both of them are CLI applications.
+All of them are CLI applications.
 
 ## Uploader
-One can extend the ability of this app by adding providers to `StorageProvider`, `CompressionProvider`, `ChecksumProvider`.
-
 The program reads `config.json` to upload specified folder to cloud.
 
 An example:
@@ -65,7 +64,11 @@ An example:
   ]
 }
 ```
-For more please read the code.
+
+One can extend the ability of this app by adding providers to `StorageProvider`, `CompressionProvider`, `ChecksumProvider`.
+
+Currently supported providers:
+- `cos`: Tencent cloud COS, also support refreshing CDN if you use such service. 
 
 ## Downloader
 It reads `sources.json` to download from specified url. Then downloads the `<DISTRIBUTION-URL>/__description.json` to get all metadata about the distribution, compare and download all files needed.
