@@ -1,4 +1,5 @@
-﻿using Uploader.StorageProvider;
+﻿using Updator.Common;
+using Uploader.StorageProvider;
 
 namespace Uploader;
 
@@ -15,6 +16,8 @@ public class Config {
    public bool autoIncreaseBuildId { get; set; } = true;
    // Channel name
    public string channel { get; set; }
+
+   public List<DistUpdateLog> updateLogs { get; set; } = new();
 
    // Files / directories to ignore in object key format
    public string[] ignored { get; set; } = Array.Empty<string>();

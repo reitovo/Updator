@@ -14,6 +14,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Updator.Common\Updator.Common.csproj" />
+      <ProjectReference Include="..\Updator.Downloader.CLI\Updator.Downloader.CLI.csproj" />
     </ItemGroup>
 
 </Project>

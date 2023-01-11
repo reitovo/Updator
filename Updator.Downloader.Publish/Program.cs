@@ -10,7 +10,7 @@ using Octokit.Internal;
 using Updator.Downloader.Publish;
 using Uploader.StorageProvider;
 
-var buildId = 2;
+var buildId = DownloaderMeta.Version;
 var projectDir = args[0];
 var publishDir = Path.Combine(projectDir, "bin/Publish");
 Directory.Delete(publishDir, true);

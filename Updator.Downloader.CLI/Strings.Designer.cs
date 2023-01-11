@@ -78,7 +78,7 @@ namespace Updator.Downloader.CLI {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to [green]Downloaded description[/].
+        ///   Looks up a localized string similar to [palegreen1]Downloaded description[/].
         /// </summary>
         internal static string DownloadedDescription {
             get {
@@ -87,7 +87,7 @@ namespace Updator.Downloader.CLI {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to [green]Downloaded update files[/].
+        ///   Looks up a localized string similar to [palegreen1]Downloaded update files[/].
         /// </summary>
         internal static string DownloadedUpdateFiles {
             get {
@@ -105,6 +105,24 @@ namespace Updator.Downloader.CLI {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to [green]Press ENTER to continue[/].
+        /// </summary>
+        internal static string EnterToContinue {
+            get {
+                return ResourceManager.GetString("EnterToContinue", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to [yellow]Restart application if it seems stucked for too long[/].
+        /// </summary>
+        internal static string KillWhenTooLong {
+            get {
+                return ResourceManager.GetString("KillWhenTooLong", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to [red]No[/].
         /// </summary>
         internal static string No {
@@ -114,7 +132,7 @@ namespace Updator.Downloader.CLI {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to [green]Self update succeed.[/].
+        ///   Looks up a localized string similar to [palegreen1]Self update succeed.[/].
         /// </summary>
         internal static string SelfUpdateDone {
             get {
@@ -159,11 +177,20 @@ namespace Updator.Downloader.CLI {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to [green]Updated sources.json[/].
+        ///   Looks up a localized string similar to [palegreen1]Updated sources.json[/].
         /// </summary>
         internal static string UpdatedSourcesJson {
             get {
                 return ResourceManager.GetString("UpdatedSourcesJson", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to [blue]Update Logs[/].
+        /// </summary>
+        internal static string UpdateLogs {
+            get {
+                return ResourceManager.GetString("UpdateLogs", resourceCulture);
             }
         }
         
@@ -177,7 +204,7 @@ namespace Updator.Downloader.CLI {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to [green]Yes[/].
+        ///   Looks up a localized string similar to [palegreen1]Yes[/].
         /// </summary>
         internal static string Yes {
             get {

@@ -18,7 +18,7 @@
         <value>[yellow]更新来源[/]</value>
     </data>
     <data name="UpdatedSourcesJson" xml:space="preserve">
-        <value>[green]更新来源[/]</value>
+        <value>[palegreen1]更新来源[/]</value>
     </data>
     <data name="ShouldUniqueSource" xml:space="preserve">
         <value>应当仅存在1个启用的来源，请检查[underline red]sources.json[/]</value>
@@ -27,13 +27,13 @@
         <value>[yellow]更新描述[/]</value>
     </data>
     <data name="DownloadedDescription" xml:space="preserve">
-        <value>[green]更新描述[/]</value>
+        <value>[palegreen1]更新描述[/]</value>
     </data>
     <data name="DownloadUpdateFiles" xml:space="preserve">
         <value>[yellow]更新文件[/]</value>
     </data>
     <data name="DownloadedUpdateFiles" xml:space="preserve">
-        <value>[green]更新文件[/]</value>
+        <value>[palegreen1]更新文件[/]</value>
     </data>
     <data name="UpdateDone" xml:space="preserve">
         <value>[blue]更新完成，启动 {0} 中 [/]</value>
@@ -48,9 +48,18 @@
         <value>[red]否[/]</value>
     </data>
     <data name="Yes" xml:space="preserve">
-        <value>[green]是[/]</value>
+        <value>[palegreen1]是[/]</value>
     </data>
     <data name="SelfUpdateDone" xml:space="preserve">
-        <value>[green]启动器更新完成[/]</value>
+        <value>[palegreen1]启动器更新完成[/]</value>
+    </data>
+    <data name="UpdateLogs" xml:space="preserve">
+        <value>[blue]更新日志[/]</value>
+    </data>
+    <data name="EnterToContinue" xml:space="preserve">
+        <value>[green]按回车键继续[/]</value>
+    </data>
+    <data name="KillWhenTooLong" xml:space="preserve">
+        <value>[yellow]如遇更新卡住时间过长，请重新打开本程序[/]</value>
     </data>
 </root>

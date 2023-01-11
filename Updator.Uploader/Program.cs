@@ -1,5 +1,6 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
+using System.Collections.Concurrent;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -78,7 +79,8 @@ var desc = new DistDescription {
    channel = config.channel,
    executable = config.executable,
    compression = config.compression,
-   checksum = config.checksum
+   checksum = config.checksum,
+   updateLogs = config.updateLogs
 };
 
 var compressionMismatch = false;
@@ -89,9 +91,13 @@ if (config.autoIncreaseBuildId) {
    if (storageDesc.Length != 0) {
       try {
          var oldDesc = JsonDocument.Parse(storageDesc.ToArray()).Deserialize<DistDescription>();
-         desc.buildId = oldDesc.buildId + 1;
-         logger.LogInformation($"Successfully increased build id {desc.buildId}");
-
+         if (desc.buildId > oldDesc.buildId) {
+            logger.LogInformation(
+               $"Forced build id {desc.buildId} because it is larger than existing {oldDesc.buildId}");
+         } else {
+            desc.buildId = oldDesc.buildId + 1;
+            logger.LogInformation($"Successfully increased build id {desc.buildId}");
+         }
          if (oldDesc.compression != desc.compression) {
             compressionMismatch = true;
             logger.LogInformation($"Compression type mismatch, overwrite all");
@@ -104,6 +110,7 @@ if (config.autoIncreaseBuildId) {
    }
 }
 
+ConcurrentBag<string> uploadedObjectKeys = new();
 await Parallel.ForEachAsync(root.Items, async (item, _) => {
    using var ms = new MemoryStream();
    await compress.Compress(item.fileInfo.OpenRead(), ms);
@@ -132,6 +139,7 @@ await Parallel.ForEachAsync(root.Items, async (item, _) => {
       ms.Position = 0;
       await storage.UploadAsync(item.storageObjectKey, ms);
       logger.LogTrace($"Uploaded {item.storageObjectKey} -> done");
+      uploadedObjectKeys.Add(item.storageObjectKey);
    }
 });
 
@@ -140,6 +148,12 @@ var descText = JsonSerializer.Serialize(desc, new JsonSerializerOptions() {
    WriteIndented = true
 });
 await storage.UploadAsync("__description.json", new MemoryStream(Encoding.UTF8.GetBytes(descText)));
+uploadedObjectKeys.Add("__description.json");
 logger.LogInformation("Uploaded storage description");
+
+if (storage is ICdnRefresh cdn) {
+   logger.LogInformation("Refresh CDN");
+   await cdn.RefreshObjectKeys(uploadedObjectKeys);
+}
 
 logger.LogInformation("Done");

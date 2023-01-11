@@ -9,6 +9,7 @@
     <ItemGroup>
       <PackageReference Include="Serilog.Extensions.Logging.File" Version="3.0.0" />
       <PackageReference Include="Tencent.QCloud.Cos.Sdk" Version="5.4.34" />
+      <PackageReference Include="TencentCloudSDK.Cdn" Version="3.0.680" />
     </ItemGroup>
 
 </Project>

@@ -25,7 +25,7 @@
         <value>[yellow]Update sources.json[/]</value>
     </data>
     <data name="UpdatedSourcesJson" xml:space="preserve">
-        <value>[green]Updated sources.json[/]</value>
+        <value>[palegreen1]Updated sources.json[/]</value>
     </data>
     <data name="ShouldUniqueSource" xml:space="preserve">
         <value>There should only be one enabled source in [underline red]sources.json[/]. Please check again!</value>
@@ -34,13 +34,13 @@
         <value>[yellow]Downloading description[/]</value>
     </data>
     <data name="DownloadedDescription" xml:space="preserve">
-        <value>[green]Downloaded description[/]</value>
+        <value>[palegreen1]Downloaded description[/]</value>
     </data>
     <data name="DownloadUpdateFiles" xml:space="preserve">
         <value>[yellow]Downloading update files[/]</value>
     </data>
     <data name="DownloadedUpdateFiles" xml:space="preserve">
-        <value>[green]Downloaded update files[/]</value>
+        <value>[palegreen1]Downloaded update files[/]</value>
     </data>
     <data name="UpdateDone" xml:space="preserve">
         <value>[blue]Update complete, launching {0} [/]</value>
@@ -52,12 +52,21 @@
         <value>[blue]Updating launcher[/]</value>
     </data>
     <data name="Yes" xml:space="preserve">
-        <value>[green]Yes[/]</value>
+        <value>[palegreen1]Yes[/]</value>
     </data>
     <data name="No" xml:space="preserve">
         <value>[red]No[/]</value>
     </data>
     <data name="SelfUpdateDone" xml:space="preserve">
-        <value>[green]Self update succeed.[/]</value>
+        <value>[palegreen1]Self update succeed.[/]</value>
+    </data>
+    <data name="UpdateLogs" xml:space="preserve">
+        <value>[blue]Update Logs[/]</value>
+    </data>
+    <data name="EnterToContinue" xml:space="preserve">
+        <value>[green]Press ENTER to continue[/]</value>
+    </data>
+    <data name="KillWhenTooLong" xml:space="preserve">
+        <value>[yellow]Restart application if it seems stucked for too long[/]</value>
     </data>
 </root>

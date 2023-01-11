@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -13,7 +14,8 @@ using Updator.Downloader.CLI;
 Console.OutputEncoding = Encoding.UTF8;
 AnsiConsole.Profile.Encoding = Encoding.UTF8;
 
-var downloaderVersion = 1;
+AnsiConsole.MarkupLine(Strings.KillWhenTooLong);
+
 var downloaderUrl = "https://github.com/cnSchwarzer/Updator/releases/latest/download";
 var projectName = string.Empty;
 
@@ -39,8 +41,9 @@ if (args.Length == 2) {
                OperatingSystem.IsLinux() ? "linux-x64" :
                OperatingSystem.IsMacOS() ? "osx-x64" : null;
             if (env != null) {
-               using var http = new HttpClient();
-               http.Timeout = TimeSpan.FromSeconds(5);
+               using var http = new HttpClient(new SocketsHttpHandler() {
+                  ConnectTimeout = TimeSpan.FromSeconds(10)
+               });
                var payload = await http.GetByteArrayAsync(Path.Combine(downloaderUrl, $"cli-{env}"));
                var signature = await http.GetByteArrayAsync(Path.Combine(downloaderUrl, $"cli-{env}.sha512"));
                var hash = SHA512.HashData(payload);
@@ -68,14 +71,17 @@ if (args.Length == 2) {
    }
 }
 
+var updateLogs = new List<DistUpdateLog>();
+
 await AnsiConsole.Progress()
    .Columns(new TaskDescriptionColumn(), new ProgressBarColumn(), new PercentageColumn(),
       new SpinnerColumn(Spinner.Known.Dots2)).StartAsync(async p => {
       var task = p.AddTask(Strings.UpdateSourcesJson);
       if (!string.IsNullOrWhiteSpace(sources.sourcesUrl)) {
          try {
-            using var http = new HttpClient();
-            http.Timeout = TimeSpan.FromSeconds(5);
+            using var http = new HttpClient(new SocketsHttpHandler() {
+               ConnectTimeout = TimeSpan.FromSeconds(10)
+            });
             var newSources = await http.GetByteArrayAsync(sources.sourcesUrl);
             task.Increment(80);
 
@@ -89,13 +95,14 @@ await AnsiConsole.Progress()
             }
             task.Increment(5);
 
-            task.Description = Strings.UpdatedSourcesJson;
+            task.Description = $"[cyan2]{newSourcesObj.version}[/] " + Strings.UpdatedSourcesJson;
          } catch (Exception ex) {
             AnsiConsole.WriteException(ex);
-            return;
+            task.Value = task.MaxValue;
          }
       } else {
          task.Description = Strings.UpdatedSourcesJson;
+         task.Value = task.MaxValue;
       }
 
       var sourceCandidate = sources.sources.Where(a => a.enable).ToList();
@@ -109,15 +116,16 @@ await AnsiConsole.Progress()
       task = p.AddTask(Strings.DownloadDescription);
 
       try {
-         using var http = new HttpClient();
-         http.Timeout = TimeSpan.FromSeconds(1);
+         using var http = new HttpClient(new SocketsHttpHandler() {
+            ConnectTimeout = TimeSpan.FromSeconds(10)
+         });
          var descBytes = await http.GetByteArrayAsync(Path.Combine(source.distributionUrl, "__description.json"));
          task.Increment(80);
 
          desc = await JsonSerializer.DeserializeAsync(new MemoryStream(descBytes),
             DistDescriptionSerializer.Default.DistDescription);
          task.Increment(20);
-         task.Description = Strings.DownloadedDescription;
+         task.Description = $"[cyan2]{desc.buildId}[/] " + Strings.DownloadedDescription;
       } catch (Exception ex) {
          AnsiConsole.WriteException(ex);
          return;
@@ -152,12 +160,16 @@ await AnsiConsole.Progress()
       task = p.AddTask(Strings.DownloadUpdateFiles);
       var distRoot = new DirectoryInfo(desc.channel).FullName;
       var executable = Path.Combine(distRoot, desc.executable);
+      var descPath = Path.Combine(distRoot, "__description.json");
 
       if (!Directory.Exists(distRoot)) {
          Directory.CreateDirectory(distRoot);
       }
 
       task.MaxValue = desc.files.Count;
+
+      var sw = new Stopwatch();
+      sw.Start();
 
       await Parallel.ForEachAsync(desc.files, async (f, ct) => {
          var fullPath = new FileInfo(Path.Combine(distRoot, f.objectKey));
@@ -185,8 +197,9 @@ await AnsiConsole.Progress()
          if (download) {
             while (true) {
                try {
-                  using var http = new HttpClient();
-                  http.Timeout = TimeSpan.FromSeconds(5);
+                  using var http = new HttpClient(new SocketsHttpHandler() {
+                     ConnectTimeout = TimeSpan.FromSeconds(10)
+                  });
                   var b = await http.GetByteArrayAsync(Path.Combine(source.distributionUrl, f.objectKey));
                   using var ms = new MemoryStream(b);
                   ms.Position = 0;
@@ -200,6 +213,8 @@ await AnsiConsole.Progress()
                   await fs.DisposeAsync();
                   fs.Close();
                   break;
+               } catch (TaskCanceledException) {
+                  // ignored
                } catch (Exception ex) {
                   AnsiConsole.WriteException(ex);
                   await Task.Delay(TimeSpan.FromSeconds(1), ct);
@@ -209,8 +224,23 @@ await AnsiConsole.Progress()
 
          task.Increment(1);
       });
+      var sec = sw.Elapsed.TotalSeconds;
 
-      task.Description = Strings.DownloadedUpdateFiles;
+      task.Description = $"[cyan2]{sec:f2}s[/] " + Strings.DownloadedUpdateFiles;
+
+      if (File.Exists(descPath) && desc.updateLogs is {Count: > 0}) {
+         try {
+            var oldDesc = await JsonSerializer.DeserializeAsync(new MemoryStream(File.ReadAllBytes(descPath)),
+               DistDescriptionSerializer.Default.DistDescription);
+            var logs = desc.updateLogs.Where(a => a.buildId > oldDesc.buildId).ToList();
+            logs.Sort((a, b) => b.buildId.CompareTo(a.buildId));
+            updateLogs.AddRange(logs);
+         } catch (Exception ex) {
+            AnsiConsole.WriteException(ex);
+         }
+      }
+
+      File.WriteAllText(descPath, JsonSerializer.Serialize(desc, DistDescriptionSerializer.Default.DistDescription));
 
       Process.Start(new ProcessStartInfo() {
          FileName = executable,
@@ -218,9 +248,32 @@ await AnsiConsole.Progress()
       });
    });
 
+if (updateLogs.Any()) {
+   AnsiConsole.MarkupLine(Strings.UpdateLogs);
+   foreach (var updateLog in updateLogs) {
+      var items = new List<string>();
+      if (updateLog.items.TryGetValue(CultureInfo.CurrentCulture.TwoLetterISOLanguageName, out var localized)) {
+         items.AddRange(localized);
+      } else if (updateLog.items.TryGetValue("_", out var def)) {
+         items.AddRange(def);
+      }
+      var table = new Table();
+      table.AddColumn($"[blue]{updateLog.versionString} ({updateLog.buildId})[/]");
+      foreach (var i in items) {
+         table.AddRow(i);
+      }
+      AnsiConsole.Write(table);
+   }
+}
+
 if (!string.IsNullOrWhiteSpace(projectName)) {
    await AnsiConsole.Status().Spinner(Spinner.Known.Dots2).StartAsync(string.Format(Strings.UpdateDone, projectName),
       async ctx => { await Task.Delay(TimeSpan.FromSeconds(3)); });
+}
+
+if (updateLogs.Any()) {
+   AnsiConsole.MarkupLine(Strings.EnterToContinue);
+   Console.ReadLine();
 }
 
 var latestDownloaderVersion = 0;
@@ -235,7 +288,7 @@ await AnsiConsole.Status().Spinner(Spinner.Known.Dots2).StartAsync(Strings.Check
    }
 });
 
-if (latestDownloaderVersion > downloaderVersion) {
+if (latestDownloaderVersion > DownloaderMeta.Version) {
    var updateSelf = AnsiConsole.Prompt(new SelectionPrompt<string>()
       .Title(string.Format(Strings.UpdateDownloader, latestDownloaderVersion)).AddChoices(new[] {
          Strings.Yes, Strings.No
@@ -251,4 +304,8 @@ if (latestDownloaderVersion > downloaderVersion) {
          UseShellExecute = true
       });
    }
+}
+
+public class DownloaderMeta {
+   public const int Version = 3;
 }
