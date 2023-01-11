@@ -7,6 +7,7 @@ public class DistItem {
    public string storageObjectKey;
 }
 
+// Scan distribution files
 public class DistScanner {
    private DirectoryInfo _rootInfo;
    private List<DistItem> _items = new();

@@ -2,6 +2,7 @@
 
 namespace Updator.Common.CompressionProvider;
 
+// Use gzip as compression
 public class GZip : ICompressionProvider {
    public async Task Compress(Stream src, Stream dst) {
       var zipStream = new GZipStream(dst, CompressionLevel.Optimal, true);

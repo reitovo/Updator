@@ -2,6 +2,7 @@
 
 namespace Updator.Common.ChecksumProvider;
 
+// Tencent COS SDK has CRC64 util built-in, so just use it.
 public class Crc64 : IChecksumProvider {
    static Crc64() {
       CosCrc64.InitECMA();

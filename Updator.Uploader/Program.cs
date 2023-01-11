@@ -11,6 +11,7 @@ using Updator.Common.CompressionProvider;
 using Uploader;
 using Uploader.StorageProvider;
 
+// Initialize logger
 ILogger logger = LoggerFactory.Create(builder => {
    builder.AddSimpleConsole(o => {
       o.IncludeScopes = true;
@@ -21,6 +22,7 @@ ILogger logger = LoggerFactory.Create(builder => {
    builder.SetMinimumLevel(LogLevel.Trace);
 }).CreateLogger("Uploader");
 
+// Reads config.json
 var configPath = "./config.json";
 if (args.Length != 0) {
    if (File.Exists(args[0])) {
@@ -43,6 +45,7 @@ if (args.Length != 0) {
 
 var config = JsonDocument.Parse(File.ReadAllBytes(configPath)).Deserialize<Config>();
 
+// Initialize providers
 logger.LogInformation($"Providers: {config.storage} {config.checksum} {config.compression}");
 IStorageProvider storage = config.storage switch {
    "cos" => new TencentCos(config.cos),
@@ -68,10 +71,12 @@ ICompressionProvider compress = config.compression switch {
    _ => new Raw()
 };
 
+// Scan files in the folder
 var root = new DistScanner(config.distributionRoot, config.ignored, logger);
 logger.LogInformation($"Distribution Root: ${root.RootFullName}");
 root.Scan();
 
+// Create description
 var desc = new DistDescription {
    projectName = config.projectName,
    versionString = config.versionString,
@@ -83,14 +88,15 @@ var desc = new DistDescription {
    updateLogs = config.updateLogs
 };
 
-var compressionMismatch = false;
-if (config.autoIncreaseBuildId) {
-   logger.LogInformation("Auto updating build id");
-   var storageDesc = new MemoryStream();
-   await storage.DownloadAsync("__description.json", storageDesc);
-   if (storageDesc.Length != 0) {
-      try {
-         var oldDesc = JsonDocument.Parse(storageDesc.ToArray()).Deserialize<DistDescription>();
+// Check old description
+var compressionMismatch = true;
+var storageDesc = new MemoryStream();
+await storage.DownloadAsync("__description.json", storageDesc);
+if (storageDesc.Length != 0) {
+   try {
+      var oldDesc = JsonDocument.Parse(storageDesc.ToArray()).Deserialize<DistDescription>();
+      if (config.autoIncreaseBuildId) {
+         logger.LogInformation("Auto updating build id");
          if (desc.buildId > oldDesc.buildId) {
             logger.LogInformation(
                $"Forced build id {desc.buildId} because it is larger than existing {oldDesc.buildId}");
@@ -98,18 +104,20 @@ if (config.autoIncreaseBuildId) {
             desc.buildId = oldDesc.buildId + 1;
             logger.LogInformation($"Successfully increased build id {desc.buildId}");
          }
-         if (oldDesc.compression != desc.compression) {
-            compressionMismatch = true;
-            logger.LogInformation($"Compression type mismatch, overwrite all");
-         }
-      } catch (Exception) {
-         // ignored
       }
-   } else {
-      logger.LogWarning("Failed to get storage description");
+      // If compression methods are same, it can skip re-upload
+      if (oldDesc.compression == desc.compression) {
+         compressionMismatch = false;
+         logger.LogInformation($"Compression type match");
+      }
+   } catch (Exception) {
+      // ignored
    }
+} else {
+   logger.LogWarning("Failed to get storage description");
 }
 
+// Upload files concurrently.
 ConcurrentBag<string> uploadedObjectKeys = new();
 await Parallel.ForEachAsync(root.Items, async (item, _) => {
    using var ms = new MemoryStream();
@@ -127,6 +135,7 @@ await Parallel.ForEachAsync(root.Items, async (item, _) => {
 
    var upload = false;
 
+   // Check if need re-upload
    if (compressionMismatch) {
       upload = true;
    } else {
@@ -146,6 +155,7 @@ await Parallel.ForEachAsync(root.Items, async (item, _) => {
    }
 });
 
+// Write description
 var descText = JsonSerializer.Serialize(desc, new JsonSerializerOptions() {
    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
    WriteIndented = true
@@ -154,6 +164,7 @@ await storage.UploadAsync("__description.json", new MemoryStream(Encoding.UTF8.G
 uploadedObjectKeys.Add("__description.json");
 logger.LogInformation("Uploaded storage description");
 
+// Refresh CDN if provider has such interface
 if (storage is ICdnRefresh cdn) {
    logger.LogInformation("Refresh CDN");
    await cdn.RefreshObjectKeys(uploadedObjectKeys);

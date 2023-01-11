@@ -2,6 +2,7 @@
 
 namespace Updator.Common.CompressionProvider;
 
+// Use brotli as compression
 public class Brotli : ICompressionProvider {
    public async Task Compress(Stream src, Stream dst) {
       var zipStream = new BrotliStream(dst, CompressionLevel.Optimal, true);

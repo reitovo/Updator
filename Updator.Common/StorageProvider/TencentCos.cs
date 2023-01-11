@@ -14,17 +14,27 @@ using TencentCloud.Common.Profile;
 
 namespace Uploader.StorageProvider;
 
+// Config reads from config.json
 public class TencentCosConfig {
+   // Region
    public string region { get; set; }
+   // Secret id, https://console.cloud.tencent.com/cam/capi
    public string secretId { get; set; }
+   // Secret key, https://console.cloud.tencent.com/cam/capi
    public string secretKey { get; set; }
+   // The bucket to upload to
    public string bucket { get; set; }
+   // Add a prefix to all objects. Put everything in an sub-folder to reuse the bucket
+   // Combined as Path.Combine(config.objectKeyPrefix, objectKey).Replace(@"\", "/")
+   // For example `project-name/release`
    public string objectKeyPrefix { get; set; }
 
-   // If need refresh cdn, set root url
+   // If you need refresh cdn, set root url
+   // For example `https://dist.reito.fun/project-name/release`
    public string cdnRefreshRoot { get; set; }
 }
 
+// Tencent COS as storage, it supports CDN refresh
 public class TencentCos : IStorageProvider, ICdnRefresh {
    private TencentCosConfig _config;
    private CosXml _cosXml;
@@ -52,7 +62,7 @@ public class TencentCos : IStorageProvider, ICdnRefresh {
          while (retry-- > 0) {
             try {
                string bucket = _config.bucket; //存储桶，格式：BucketName-APPID
-               string key = $"{_config.objectKeyPrefix}{objectKey}"; //对象键 
+               string key = Path.Combine(_config.objectKeyPrefix, objectKey).Replace(@"\", "/");
                PutObjectRequest request = new PutObjectRequest(bucket, key, fileStream);
                //设置进度回调
                request.SetCosProgressCallback(delegate(long completed, long total) {
@@ -82,7 +92,7 @@ public class TencentCos : IStorageProvider, ICdnRefresh {
          try {
             // 存储桶名称，此处填入格式必须为 bucketname-APPID, 其中 APPID 获取参考 https://console.cloud.tencent.com/developer
             string bucket = _config.bucket;
-            string key = $"{_config.objectKeyPrefix}{objectKey}"; //对象键 
+            string key = Path.Combine(_config.objectKeyPrefix, objectKey).Replace(@"\", "/");
             GetObjectBytesRequest request = new GetObjectBytesRequest(bucket, key);
             //设置进度回调
             request.SetCosProgressCallback(delegate(long completed, long total) {
@@ -112,7 +122,7 @@ public class TencentCos : IStorageProvider, ICdnRefresh {
       return await Task.Run(() => {
          try {
             string bucket = _config.bucket; //存储桶，格式：BucketName-APPID
-            string key = $"{_config.objectKeyPrefix}{objectKey}"; //对象键 
+            string key = Path.Combine(_config.objectKeyPrefix, objectKey).Replace(@"\", "/");
             HeadObjectRequest request = new HeadObjectRequest(bucket, key);
             //执行请求
             HeadObjectResult result = _cosXml.HeadObject(request);
