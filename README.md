@@ -8,7 +8,7 @@
 - `downloader` 用来提供给用户下载你的应用，目前使用纯HTTP(S)下载，因为云服务对象储存通常都是这种方式
 - `publisher` 用来分发 `downloader`，因为其支持自我更新。如果你想开发自己的 `downloader` 其可以协助你进行分发流水线。
 
-以上全是控制台应用，使用了 [Spectre.Console](https://spectreconsole.net/) 进行美化
+以上全是控制台应用，使用了 [Spectre.Console](https://spectreconsole.net/) 进行美化，使用 .NET 7 进行开发
 
 ![QQ截图20230111140207](https://user-images.githubusercontent.com/29846655/211731428-c8034a7a-d7fc-46ce-8a18-1ac3b09b69a6.png)
 
