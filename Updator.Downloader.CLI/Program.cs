@@ -118,7 +118,9 @@ if (args.Length == 2) {
 var latestDownloaderVersion = 0;
 await AnsiConsole.Status().Spinner(Spinner.Known.Dots2).StartAsync(Strings.CheckDownloaderUpdate, async ctx => {
    try {
-      using var http = new HttpClient();
+      using var http = new HttpClient(new SocketsHttpHandler() {
+         ConnectTimeout = TimeSpan.FromSeconds(3)
+      });
       if (int.TryParse(await http.GetStringAsync(Path.Combine(downloaderUrl, "build-id")), out var v)) {
          latestDownloaderVersion = v;
       }
