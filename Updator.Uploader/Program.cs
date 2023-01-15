@@ -28,10 +28,13 @@ var options = parsed.Value;
 
 // Reads config.json 
 var configString = string.Empty;
+var configPath = string.Empty;
+
 if (!string.IsNullOrWhiteSpace(options.ConfigFile)) {
    if (File.Exists(options.ConfigFile)) {
       logger.LogInformation($"Using config file: {options.ConfigFile}");
       configString = File.ReadAllText(options.ConfigFile);
+      configPath = options.ConfigFile;
    } else {
       logger.LogError("Specified path is not a config file");
       return;
@@ -54,6 +57,7 @@ if (!File.Exists("./config.json")) {
 
 if (string.IsNullOrWhiteSpace(configString)) {
    configString = File.ReadAllText("./config.json");
+   configPath = "./config.json";
 }
 
 var config = JsonDocument.Parse(configString).Deserialize<Config>();
@@ -120,6 +124,7 @@ if (storageDesc.Length != 0) {
                $"Forced build id {desc.buildId} because it is larger than existing {oldDesc.buildId}");
          } else {
             desc.buildId = oldDesc.buildId + 1;
+            config.buildId = desc.buildId;
             logger.LogInformation($"Successfully increased build id {desc.buildId}");
          }
       }
@@ -178,14 +183,25 @@ if (options.UpdateLogs != null) {
    var updateLogs = options.UpdateLogs.ToList();
    if (updateLogs.Any()) {
       logger.LogInformation($"Writing update logs.");
-      desc.updateLogs.Add(new DistUpdateLog() {
+      var updateLog = new DistUpdateLog() {
          buildId = desc.buildId,
          items = new() {
             {"_", updateLogs}
          },
          versionString = desc.versionString
-      });
+      };
+      desc.updateLogs.Add(updateLog);
+      config.updateLogs.Add(updateLog);
    }
+}
+
+if (!string.IsNullOrWhiteSpace(configPath) && !options.NoWriteBack) {
+   logger.LogInformation($"Save update logs to config.json");
+   var configText = JsonSerializer.Serialize(config, new JsonSerializerOptions() {
+      DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
+      WriteIndented = true
+   });
+   File.WriteAllText(configPath, configText);
 }
 
 // Write description
@@ -218,4 +234,8 @@ file class Options {
    [Option("update-log", Required = false,
       HelpText = "Add a line to update log in (set or auto-increased) `buildId` and current `versionString`.")]
    public IEnumerable<string> UpdateLogs { get; set; }
+
+   [Option("no-write-back", Required = false, Default = false,
+      HelpText = "Disable write updated config.json back to file")]
+   public bool NoWriteBack { get; set; }
 }
