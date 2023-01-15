@@ -4,6 +4,7 @@ using System.Collections.Concurrent;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using CommandLine;
 using Microsoft.Extensions.Logging;
 using Updator.Common;
 using Updator.Common.ChecksumProvider;
@@ -22,33 +23,45 @@ ILogger logger = LoggerFactory.Create(builder => {
    builder.SetMinimumLevel(LogLevel.Trace);
 }).CreateLogger("Uploader");
 
+var parsed = Parser.Default.ParseArguments<Options>(args);
+var options = parsed.Value;
+
 // Reads config.json 
 var configString = string.Empty;
-if (args.Length != 0) {
-   if (File.Exists(args[0])) {
-      var configPath = args[0];
-      logger.LogInformation($"Using config file: {configPath}");
-      configString = File.ReadAllText(configPath);
-   } else if (args[0] == "base64" && args.Length == 2) {
-      configString = Encoding.UTF8.GetString(Convert.FromBase64String(args[1]));
+if (!string.IsNullOrWhiteSpace(options.ConfigFile)) {
+   if (File.Exists(options.ConfigFile)) {
+      logger.LogInformation($"Using config file: {options.ConfigFile}");
+      configString = File.ReadAllText(options.ConfigFile);
    } else {
       logger.LogError("Specified path is not a config file");
       return;
    }
-} else {
-   if (!File.Exists("./config.json")) {
-      File.WriteAllText("./config.json", JsonSerializer.Serialize(new Config(), new JsonSerializerOptions() {
-         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
-         WriteIndented = true
-      }));
-      logger.LogInformation($"Config file not found, writing a default one.");
-      return;
-   } else {
-      configString = File.ReadAllText("./config.json");
-   }
+}
+
+if (!string.IsNullOrWhiteSpace(options.Base64ConfigFile)) {
+   logger.LogInformation($"Using base64 config file");
+   configString = Encoding.UTF8.GetString(Convert.FromBase64String(options.Base64ConfigFile));
+}
+
+if (!File.Exists("./config.json")) {
+   File.WriteAllText("./config.json", JsonSerializer.Serialize(new Config(), new JsonSerializerOptions() {
+      DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
+      WriteIndented = true
+   }));
+   logger.LogInformation($"Config file not found, writing a default one.");
+   return;
+}
+
+if (string.IsNullOrWhiteSpace(configString)) {
+   configString = File.ReadAllText("./config.json");
 }
 
 var config = JsonDocument.Parse(configString).Deserialize<Config>();
+
+if (!string.IsNullOrWhiteSpace(options.DistributionRoot)) {
+   logger.LogInformation($"Overwrite distributionRoot");
+   config.distributionRoot = options.DistributionRoot;
+}
 
 // Initialize providers
 logger.LogInformation($"Providers: {config.storage} {config.checksum} {config.compression}");
@@ -160,6 +173,21 @@ await Parallel.ForEachAsync(root.Items, async (item, _) => {
    }
 });
 
+// Write logs if there's
+if (options.UpdateLogs != null) {
+   var updateLogs = options.UpdateLogs.ToList();
+   if (updateLogs.Any()) {
+      logger.LogInformation($"Writing update logs.");
+      desc.updateLogs.Add(new DistUpdateLog() {
+         buildId = desc.buildId,
+         items = new() {
+            {"_", updateLogs}
+         },
+         versionString = desc.versionString
+      });
+   }
+}
+
 // Write description
 var descText = JsonSerializer.Serialize(desc, new JsonSerializerOptions() {
    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
@@ -176,3 +204,18 @@ if (storage is ICdnRefresh cdn) {
 }
 
 logger.LogInformation("Done");
+
+file class Options {
+   [Option("config", Required = false, HelpText = "Config file to be processed.")]
+   public string ConfigFile { get; set; }
+
+   [Option("base64", Required = false, HelpText = "Base64 encoded config file to be processed.")]
+   public string Base64ConfigFile { get; set; }
+
+   [Option("distribution-root", Required = false, HelpText = "Override `distributionRoot`.")]
+   public string DistributionRoot { get; set; }
+
+   [Option("update-log", Required = false,
+      HelpText = "Add a line to update log in (set or auto-increased) `buildId` and current `versionString`.")]
+   public IEnumerable<string> UpdateLogs { get; set; }
+}
