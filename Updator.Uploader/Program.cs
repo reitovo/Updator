@@ -22,28 +22,33 @@ ILogger logger = LoggerFactory.Create(builder => {
    builder.SetMinimumLevel(LogLevel.Trace);
 }).CreateLogger("Uploader");
 
-// Reads config.json
-var configPath = "./config.json";
+// Reads config.json 
+var configString = string.Empty;
 if (args.Length != 0) {
    if (File.Exists(args[0])) {
-      configPath = args[0];
+      var configPath = args[0];
       logger.LogInformation($"Using config file: {configPath}");
+      configString = File.ReadAllText(configPath);
+   } else if (args[0] == "base64" && args.Length == 2) {
+      configString = Encoding.UTF8.GetString(Convert.FromBase64String(args[1]));
    } else {
       logger.LogError("Specified path is not a config file");
       return;
    }
 } else {
-   if (!File.Exists(configPath)) {
-      File.WriteAllText(configPath, JsonSerializer.Serialize(new Config(), new JsonSerializerOptions() {
+   if (!File.Exists("./config.json")) {
+      File.WriteAllText("./config.json", JsonSerializer.Serialize(new Config(), new JsonSerializerOptions() {
          DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
          WriteIndented = true
       }));
       logger.LogInformation($"Config file not found, writing a default one.");
       return;
+   } else {
+      configString = File.ReadAllText("./config.json");
    }
 }
 
-var config = JsonDocument.Parse(File.ReadAllBytes(configPath)).Deserialize<Config>();
+var config = JsonDocument.Parse(configString).Deserialize<Config>();
 
 // Initialize providers
 logger.LogInformation($"Providers: {config.storage} {config.checksum} {config.compression}");
