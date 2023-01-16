@@ -189,7 +189,7 @@ if (options.UpdateLogs != null) {
             {"_", updateLogs}
          },
          versionString = desc.versionString
-      };
+      }; 
       desc.updateLogs.Add(updateLog);
       config.updateLogs.Add(updateLog);
    }
