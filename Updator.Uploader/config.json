@@ -1,0 +1,12 @@
+{
+  "projectName": "Default Project Name",
+  "distributionRoot": "./dist",
+  "versionString": "0.0.1",
+  "buildId": 100,
+  "autoIncreaseBuildId": true,
+  "updateLogs": [],
+  "ignored": [],
+  "compression": "brotli",
+  "checksum": "crc64",
+  "storage": "cos"
+}
