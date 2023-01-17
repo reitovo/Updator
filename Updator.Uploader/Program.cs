@@ -180,7 +180,7 @@ await Parallel.ForEachAsync(root.Items, async (item, _) => {
 
 // Write logs if there's
 if (options.UpdateLogs != null) {
-   var updateLogs = options.UpdateLogs.ToList();
+   var updateLogs = options.UpdateLogs.Where(a => !string.IsNullOrWhiteSpace(a)).ToList();
    if (updateLogs.Any()) {
       logger.LogInformation($"Writing update logs.");
       var updateLog = new DistUpdateLog() {
@@ -189,7 +189,7 @@ if (options.UpdateLogs != null) {
             {"_", updateLogs}
          },
          versionString = desc.versionString
-      }; 
+      };
       desc.updateLogs.Add(updateLog);
       config.updateLogs.Add(updateLog);
    }
