@@ -231,7 +231,7 @@ file class Options {
    [Option("distribution-root", Required = false, HelpText = "Override `distributionRoot`.")]
    public string DistributionRoot { get; set; }
 
-   [Option("update-log", Required = false,
+   [Option("update-log", Required = false, Default = null,
       HelpText = "Add a line to update log in (set or auto-increased) `buildId` and current `versionString`.")]
    public IEnumerable<string> UpdateLogs { get; set; }
 
