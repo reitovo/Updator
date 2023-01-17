@@ -23,7 +23,10 @@ ILogger logger = LoggerFactory.Create(builder => {
    builder.SetMinimumLevel(LogLevel.Trace);
 }).CreateLogger("Uploader");
 
-var parsed = Parser.Default.ParseArguments<Options>(args);
+var parsed = new Parser(a => {
+   a.AllowMultiInstance = true;
+   a.IgnoreUnknownArguments = true;
+}).ParseArguments<Options>(args);
 var options = parsed.Value;
 
 // Reads config.json 
@@ -37,7 +40,7 @@ if (!string.IsNullOrWhiteSpace(options.ConfigFile)) {
       configPath = options.ConfigFile;
    } else {
       logger.LogError("Specified path is not a config file");
-      return;
+      return -1;
    }
 }
 
@@ -52,7 +55,7 @@ if (!File.Exists("./config.json")) {
       WriteIndented = true
    }));
    logger.LogInformation($"Config file not found, writing a default one.");
-   return;
+   return -1;
 }
 
 if (string.IsNullOrWhiteSpace(configString)) {
@@ -75,7 +78,7 @@ IStorageProvider storage = config.storage switch {
 };
 if (storage == null) {
    logger.LogError("No effective storage provider");
-   return;
+   return -1;
 }
 
 IChecksumProvider check = config.checksum switch {
@@ -84,7 +87,7 @@ IChecksumProvider check = config.checksum switch {
 };
 if (check == null) {
    logger.LogError("No effective checksum provider");
-   return;
+   return -1;
 }
 
 ICompressionProvider compress = config.compression switch {
@@ -220,6 +223,7 @@ if (storage is ICdnRefresh cdn) {
 }
 
 logger.LogInformation("Done");
+return 0;
 
 file class Options {
    [Option("config", Required = false, HelpText = "Config file to be processed.")]
