@@ -24,12 +24,12 @@ var downloaderUrl = "https://github.com/cnSchwarzer/Updator/releases/latest/down
 var projectName = string.Empty;
 
 // Reads sources.json
-var configPath = "./sources.json";
-if (!File.Exists(configPath)) {
+var sourcesPath = "./sources.json";
+if (!File.Exists(sourcesPath)) {
    AnsiConsole.MarkupLine(Strings.SourcesNotFound);
    return;
 }
-var sources = await JsonSerializer.DeserializeAsync(new MemoryStream(File.ReadAllBytes(configPath)),
+var sources = await JsonSerializer.DeserializeAsync(new MemoryStream(File.ReadAllBytes(sourcesPath)),
    SourcesSerializer.Default.Sources);
 
 // If there's custom downloader url, replace it
@@ -153,13 +153,24 @@ if (latestDownloaderVersion > DownloaderMeta.Version) {
 // Update logs to display if there's any
 var updateLogs = new List<DistUpdateLog>();
 
+Source GetSelectedSource(Sources srcs) {
+   // Select the unique enabled source
+   var sourceCandidate = srcs.sources.Where(a => a.enable).ToList();
+   if (sourceCandidate.Count != 1) {
+      if (string.IsNullOrWhiteSpace(srcs.defaultSourceId))
+         return null;
+      return srcs.sources.FirstOrDefault(a => a.id == srcs.defaultSourceId);
+   }
+   return sourceCandidate.First();
+}
+
 await AnsiConsole.Progress()
    .Columns(new TaskDescriptionColumn(), new ProgressBarColumn(), new PercentageColumn(),
       new SpinnerColumn(Spinner.Known.Dots2)).StartAsync(async p => {
       var task = p.AddTask(Strings.UpdateSourcesJson);
 
       // Update sources.json if set.
-      if (!string.IsNullOrWhiteSpace(sources.sourcesUrl)) {
+      if (!string.IsNullOrWhiteSpace(sources.sourcesUrl) && !sources.disableSourcesUpdate) {
          try {
             using var http = new HttpClient(new SocketsHttpHandler() {
                ConnectTimeout = TimeSpan.FromSeconds(10)
@@ -173,8 +184,26 @@ await AnsiConsole.Progress()
 
             // Replace the file if the remote one is newer.
             if (newSourcesObj.version > sources.version) {
-               await File.WriteAllBytesAsync(configPath, newSources);
+               // If user changed source, try keep it.
+               var defaultId = sources.defaultSourceId;
+               if (!string.IsNullOrWhiteSpace(defaultId)) {
+                  var s = GetSelectedSource(sources);
+                  if (!string.IsNullOrWhiteSpace(s.id) && s.id != defaultId) {
+                     var ns = newSourcesObj.sources.FirstOrDefault(a => a.distributionUrl == s.distributionUrl);
+                     if (ns != null) {
+                        newSourcesObj.sources.ForEach(a => a.enable = false);
+                        ns.enable = true;
+                     }
+                  }
+               }
+
                sources = newSourcesObj;
+               var newSourcesStr = JsonSerializer.Serialize(newSourcesObj, new SourcesSerializer(
+                  new JsonSerializerOptions() {
+                     WriteIndented = true,
+                     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault
+                  }).Sources);
+               await File.WriteAllTextAsync(sourcesPath, newSourcesStr);
             }
             task.Increment(5);
 
@@ -188,14 +217,12 @@ await AnsiConsole.Progress()
          task.Value = task.MaxValue;
       }
 
-      // Select the unique enabled source
-      var sourceCandidate = sources.sources.Where(a => a.enable).ToList();
-      if (sourceCandidate.Count != 1) {
+      var source = GetSelectedSource(sources);
+      if (source == null) {
          AnsiConsole.MarkupLine(Strings.ShouldUniqueSource);
          return;
       }
 
-      var source = sourceCandidate.First();
       DistDescription desc = null;
       task = p.AddTask(Strings.DownloadDescription);
 
@@ -371,7 +398,7 @@ if (updateLogs.Any()) {
 // Print a hint
 if (!string.IsNullOrWhiteSpace(projectName)) {
    await AnsiConsole.Status().Spinner(Spinner.Known.Dots2).StartAsync(string.Format(Strings.UpdateDone, projectName),
-      async ctx => { await Task.Delay(TimeSpan.FromSeconds(3)); });
+      async ctx => { await Task.Delay(TimeSpan.FromSeconds(2)); });
 }
 
 // Wait for user ENTER if there's log.

@@ -6,6 +6,7 @@ using Updator.Common;
 namespace Updator.Downloader.CLI;
 
 public class Source {
+   public string id { get; set; }
    // Only one source should be enabled.
    public bool enable { get; set; }
    // The distribution root url of the source.
@@ -22,6 +23,11 @@ public class Sources {
    public string sourcesUrl { get; set; }
    // Custom downloader update url, default is github, check code.
    public string customDownloaderUrl { get; set; }
+   // Disable auto update sources.json
+   public bool disableSourcesUpdate { get; set; }
+   
+   // Set the default source id
+   public string defaultSourceId { get; set; }
 
    // Available sources, you can predefine `release`, `debug` channels and let user to enable one of them
    // if the user wants to switch channel.

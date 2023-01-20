@@ -183,7 +183,7 @@ await Parallel.ForEachAsync(root.Items, async (item, _) => {
 
 // Write logs if there's
 if (options.UpdateLogs != null) {
-   var updateLogs = options.UpdateLogs.Where(a => !string.IsNullOrWhiteSpace(a)).ToList();
+   var updateLogs = options.UpdateLogs.Where(a => !string.IsNullOrWhiteSpace(a)).Distinct().ToList();
    if (updateLogs.Any()) {
       logger.LogInformation($"Writing update logs.");
       var updateLog = new DistUpdateLog() {
