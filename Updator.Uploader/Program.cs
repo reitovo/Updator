@@ -110,7 +110,7 @@ var desc = new DistDescription {
    executable = config.executable,
    compression = config.compression,
    checksum = config.checksum,
-   updateLogs = config.updateLogs
+   updateLogs = config.updateLogs.ToList()
 };
 
 // Check old description
