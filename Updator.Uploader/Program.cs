@@ -27,6 +27,13 @@ var parsed = new Parser(a => {
    a.AllowMultiInstance = true;
    a.IgnoreUnknownArguments = true;
 }).ParseArguments<Options>(args);
+if (parsed.Value == null) {
+   foreach (var e in parsed.Errors) {
+      logger.LogError(e.ToString());
+   }
+   return -1;
+}
+
 var options = parsed.Value;
 
 // Reads config.json 

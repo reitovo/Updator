@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Globalization;
+using System.Security.AccessControl;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -10,7 +11,24 @@ using Updator.Common.ChecksumProvider;
 using Updator.Common.CompressionProvider;
 using Updator.Downloader;
 using Updator.Downloader.CLI;
-using System;
+
+void Exec(string cmd) {
+   var escapedArgs = cmd.Replace("\"", "\\\"");
+
+   using var process = new Process {
+      StartInfo = new ProcessStartInfo {
+         RedirectStandardOutput = true,
+         UseShellExecute = false,
+         CreateNoWindow = true,
+         WindowStyle = ProcessWindowStyle.Hidden,
+         FileName = "/bin/bash",
+         Arguments = $"-c \"{escapedArgs}\""
+      }
+   };
+
+   process.Start();
+   process.WaitForExit();
+}
 
 // Set console encoding to utf-8
 Console.OutputEncoding = Encoding.UTF8;
@@ -19,32 +37,14 @@ AnsiConsole.Profile.Encoding = Encoding.UTF8;
 // Print a hint if the program hangs too long
 AnsiConsole.MarkupLine(Strings.KillWhenTooLong);
 
-// Default downloader self-update url.
-var downloaderUrl = "https://github.com/cnSchwarzer/Updator/releases/latest/download";
-var projectName = string.Empty;
-
-// Reads sources.json
-var sourcesPath = "./sources.json";
-if (!File.Exists(sourcesPath)) {
-   AnsiConsole.MarkupLine(Strings.SourcesNotFound);
-   return;
-}
-var sources = await JsonSerializer.DeserializeAsync(new MemoryStream(File.ReadAllBytes(sourcesPath)),
-   SourcesSerializer.Default.Sources);
-
-// If there's custom downloader url, replace it
-if (!string.IsNullOrWhiteSpace(sources.customDownloaderUrl)) {
-   downloaderUrl = sources.customDownloaderUrl;
-   Debug.WriteLine($"Using custom downloader url {downloaderUrl}");
-}
-
 // If the program is started by self-update procedure
-if (args.Length == 2) {
+if (args.Length == 3) {
    if (args[0] == "self-update") {
       await AnsiConsole.Progress()
          .Columns(new TaskDescriptionColumn(), new ProgressBarColumn(), new PercentageColumn(),
             new SpinnerColumn(Spinner.Known.Dots2)).StartAsync(async ctx => {
             try {
+               var downloaderUrl = args[2];
                var task = ctx.AddTask(Strings.CheckDownloaderUpdate);
                // We will copy the newer version back to place. Because we are now at a temp path.
                var writeBack = args[1];
@@ -92,6 +92,10 @@ if (args.Length == 2) {
                         }
                      }
 
+                     if (!OperatingSystem.IsWindows()) {
+                        Exec($"chmod +x {writeBack}");
+                     }
+
                      // Start the original process
                      Process.Start(new ProcessStartInfo() {
                         FileName = writeBack,
@@ -112,6 +116,28 @@ if (args.Length == 2) {
       await Task.Delay(TimeSpan.FromSeconds(3));
       return;
    }
+}
+
+// Default downloader self-update url.
+var downloaderUrl = "https://github.com/cnSchwarzer/Updator/releases/latest/download";
+var projectName = string.Empty;
+
+// Reads sources.json
+var sourcesPath = "./sources.json";
+if (!File.Exists(sourcesPath)) {
+   sourcesPath = Path.Combine(Directory.GetParent(Environment.ProcessPath!)!.FullName, "sources.json");
+   if (!File.Exists(sourcesPath)) {
+      AnsiConsole.MarkupLine(Strings.SourcesNotFound);
+      return;
+   }
+}
+var sources = await JsonSerializer.DeserializeAsync(new MemoryStream(File.ReadAllBytes(sourcesPath)),
+   SourcesSerializer.Default.Sources);
+
+// If there's custom downloader url, replace it
+if (!string.IsNullOrWhiteSpace(sources.customDownloaderUrl)) {
+   downloaderUrl = sources.customDownloaderUrl;
+   Debug.WriteLine($"Using custom downloader url {downloaderUrl}");
 }
 
 // Check for downloader update
@@ -142,7 +168,7 @@ if (latestDownloaderVersion > DownloaderMeta.Version) {
       File.Copy(current, temp, true);
       Process.Start(new ProcessStartInfo() {
          FileName = temp,
-         Arguments = $"""self-update "{current}" """,
+         Arguments = $"""self-update "{current}" "{downloaderUrl}" """,
          CreateNoWindow = false,
          UseShellExecute = true
       });
@@ -369,10 +395,15 @@ await AnsiConsole.Progress()
 
       File.WriteAllText(descPath, JsonSerializer.Serialize(desc, DistDescriptionSerializer.Default.DistDescription));
 
+      if (!OperatingSystem.IsWindows()) {
+         Exec($"chmod +x {executable}");
+      }
+
       // Start the payload executable
       Process.Start(new ProcessStartInfo() {
          FileName = executable,
-         WorkingDirectory = new FileInfo(executable).Directory!.FullName
+         WorkingDirectory = new DirectoryInfo(executable).Parent!.FullName,
+         UseShellExecute = true
       });
    });
 
