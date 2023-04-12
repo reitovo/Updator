@@ -117,7 +117,8 @@ var desc = new DistDescription {
    executable = config.executable,
    compression = config.compression,
    checksum = config.checksum,
-   updateLogs = config.updateLogs.ToList()
+   updateLogs = config.updateLogs.ToList(),
+   passBuildId = config.passBuildId
 };
 
 // Check old description

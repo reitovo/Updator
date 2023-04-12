@@ -40,4 +40,5 @@ public class DistDescription {
    public List<DistFile> files { get; set; } = new();
    // Update logs
    public List<DistUpdateLog> updateLogs { get; set; } = new();
+   public string passBuildId { get; set; }
 }

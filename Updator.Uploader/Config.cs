@@ -36,4 +36,7 @@ public class Config {
    public string storage { get; set; } = "cos";
    // tencent cos config ("cos")
    public TencentCosConfig cos { get; set; }
+
+   // pass build id to executable as argument --<passBuildId>
+   public string passBuildId { get; set; }
 }

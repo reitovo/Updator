@@ -399,10 +399,16 @@ await AnsiConsole.Progress()
          Exec($"chmod +x {executable}");
       }
 
+      var passArgument = string.Empty;
+      if (string.IsNullOrWhiteSpace(desc.passBuildId)) {
+         passArgument += $"--{desc.passBuildId} {desc.buildId} ";
+      }
+
       // Start the payload executable
       Process.Start(new ProcessStartInfo() {
          FileName = executable,
          WorkingDirectory = new DirectoryInfo(executable).Parent!.FullName,
+         Arguments = passArgument,
          UseShellExecute = true
       });
    });
