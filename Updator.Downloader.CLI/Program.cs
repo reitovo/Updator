@@ -89,6 +89,7 @@ if (args.Length == 3) {
                            break;
                         } catch (Exception) {
                            await Task.Delay(TimeSpan.FromSeconds(1));
+                           AnsiConsole.MarkupLine(Strings.FailedToMove);
                         }
                      }
 
@@ -400,7 +401,7 @@ await AnsiConsole.Progress()
       }
 
       var passArgument = string.Empty;
-      if (string.IsNullOrWhiteSpace(desc.passBuildId)) {
+      if (!string.IsNullOrWhiteSpace(desc.passBuildId)) {
          passArgument += $"--{desc.passBuildId} {desc.buildId} ";
       }
 

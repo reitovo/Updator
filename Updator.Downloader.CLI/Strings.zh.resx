@@ -65,4 +65,7 @@
     <data name="DonwloaderUpdateFailed" xml:space="preserve">
         <value>[red]启动器更新失败，请前往软件官网下载新版本[/]</value>
     </data>
+    <data name="FailedToMove" xml:space="preserve">
+        <value>[red]无法将新版本写回原位置，请检查老版本窗口是否已关闭，或尝试手动删除老版本[/]</value>
+    </data>
 </root>

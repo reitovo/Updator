@@ -123,6 +123,15 @@ namespace Updator.Downloader.CLI {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to [red]Cannot write new version back, please close/delete the old version manually.[/].
+        /// </summary>
+        internal static string FailedToMove {
+            get {
+                return ResourceManager.GetString("FailedToMove", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to [yellow]Restart application if it seems stucked for too long[/].
         /// </summary>
         internal static string KillWhenTooLong {

@@ -72,4 +72,7 @@
     <data name="DonwloaderUpdateFailed" xml:space="preserve">
         <value>[red]Update launcher failed, please visit software website to manually update.[/]</value>
     </data>
+    <data name="FailedToMove" xml:space="preserve">
+        <value>[red]Cannot write new version back, please close/delete the old version manually.[/]</value>
+    </data>
 </root>
