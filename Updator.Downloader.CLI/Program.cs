@@ -439,8 +439,7 @@ if (!string.IsNullOrWhiteSpace(projectName)) {
       async ctx => { await Task.Delay(TimeSpan.FromSeconds(2)); });
 }
 
-// Wait for user ENTER if there's log.
+// If there's log.
 if (updateLogs.Any()) {
-   AnsiConsole.MarkupLine(Strings.EnterToContinue);
-   Console.ReadLine();
+   await Task.Delay(TimeSpan.FromSeconds(5));
 }
