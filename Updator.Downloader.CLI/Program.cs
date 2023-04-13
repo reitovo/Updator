@@ -223,6 +223,16 @@ await AnsiConsole.Progress()
                      }
                   }
                }
+               
+               // If no enabled from new, use current
+               if (newSourcesObj.sources.All(a => !a.enable)) {
+                  var s = GetSelectedSource(sources); 
+                  var ns = newSourcesObj.sources.FirstOrDefault(a => a.distributionUrl == s.distributionUrl);
+                  if (ns != null) {
+                     newSourcesObj.sources.ForEach(a => a.enable = false);
+                     ns.enable = true;
+                  } 
+               }
 
                sources = newSourcesObj;
                var newSourcesStr = JsonSerializer.Serialize(newSourcesObj, new SourcesSerializer(
@@ -439,8 +449,7 @@ if (!string.IsNullOrWhiteSpace(projectName)) {
       async ctx => { await Task.Delay(TimeSpan.FromSeconds(2)); });
 }
 
-// Wait for user ENTER if there's log.
+// If there's log.
 if (updateLogs.Any()) {
-   AnsiConsole.MarkupLine(Strings.EnterToContinue);
-   Console.ReadLine();
+   await Task.Delay(TimeSpan.FromSeconds(5));
 }
