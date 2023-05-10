@@ -1,5 +1,5 @@
 ﻿namespace Updator.Downloader.CLI;
 
 public class DownloaderMeta {
-   public const int Version = 31;
+   public const int Version = 32;
 }

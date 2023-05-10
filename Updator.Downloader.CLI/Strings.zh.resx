@@ -60,7 +60,7 @@
         <value>[green]按回车键继续[/]</value>
     </data>
     <data name="KillWhenTooLong" xml:space="preserve">
-        <value>[yellow]如遇更新卡住时间过长，请重新打开本程序[/]</value>
+        <value>[yellow]如遇更新卡住时间过长，请重新打开本程序。如启动失败，请前往官网重新下载。[/]</value>
     </data>
     <data name="DonwloaderUpdateFailed" xml:space="preserve">
         <value>[red]启动器更新失败，请前往软件官网下载新版本[/]</value>
