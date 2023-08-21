@@ -14,14 +14,15 @@ using Uploader.StorageProvider;
 
 // Initialize logger
 ILogger logger = LoggerFactory.Create(builder => {
-   builder.AddSimpleConsole(o => {
-      o.IncludeScopes = true;
-      o.TimestampFormat = "HH:mm:ss ";
-      o.SingleLine = true;
-   });
-   builder.AddFile("./uploader.log");
-   builder.SetMinimumLevel(LogLevel.Trace);
-}).CreateLogger("Uploader");
+      builder.AddSimpleConsole(o => {
+         o.IncludeScopes = true;
+         o.TimestampFormat = "HH:mm:ss ";
+         o.SingleLine = true;
+      });
+      builder.AddFile("./uploader.log");
+      builder.SetMinimumLevel(LogLevel.Trace);
+   })
+   .CreateLogger("Uploader");
 
 var parsed = new Parser(a => {
    a.AllowMultiInstance = true;
@@ -153,6 +154,7 @@ if (storageDesc.Length != 0) {
 
 // Upload files concurrently.
 ConcurrentBag<string> uploadedObjectKeys = new();
+ConcurrentBag<DistFile> descFiles = new();
 await Parallel.ForEachAsync(root.Items, async (item, _) => {
    using var ms = new MemoryStream();
    var fs = item.fileInfo.OpenRead();
@@ -162,7 +164,7 @@ await Parallel.ForEachAsync(root.Items, async (item, _) => {
    ms.Position = 0;
    var checksum = await check.CalculateChecksum(ms);
 
-   desc.files.Add(new() {
+   descFiles.Add(new() {
       checksum = checksum,
       objectKey = item.storageObjectKey
    });
@@ -188,6 +190,8 @@ await Parallel.ForEachAsync(root.Items, async (item, _) => {
       uploadedObjectKeys.Add(item.storageObjectKey);
    }
 });
+
+desc.files.AddRange(descFiles);
 
 // Write logs if there's
 if (options.UpdateLogs != null) {
@@ -228,6 +232,7 @@ logger.LogInformation("Uploaded storage description");
 if (storage is ICdnRefresh cdn) {
    logger.LogInformation("Refresh CDN");
    await cdn.RefreshObjectKeys(uploadedObjectKeys);
+   await cdn.RefreshRoot();
 }
 
 logger.LogInformation("Done");

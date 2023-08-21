@@ -25,7 +25,7 @@ public class Sources {
    public string customDownloaderUrl { get; set; }
    // Disable auto update sources.json
    public bool disableSourcesUpdate { get; set; }
-   
+
    // Set the default source id
    public string defaultSourceId { get; set; }
 

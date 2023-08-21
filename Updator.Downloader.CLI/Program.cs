@@ -42,7 +42,8 @@ if (args.Length == 3) {
    if (args[0] == "self-update") {
       await AnsiConsole.Progress()
          .Columns(new TaskDescriptionColumn(), new ProgressBarColumn(), new PercentageColumn(),
-            new SpinnerColumn(Spinner.Known.Dots2)).StartAsync(async ctx => {
+            new SpinnerColumn(Spinner.Known.Dots2))
+         .StartAsync(async ctx => {
             try {
                var downloaderUrl = args[2];
                var task = ctx.AddTask(Strings.CheckDownloaderUpdate);
@@ -143,23 +144,26 @@ if (!string.IsNullOrWhiteSpace(sources.customDownloaderUrl)) {
 
 // Check for downloader update
 var latestDownloaderVersion = 0;
-await AnsiConsole.Status().Spinner(Spinner.Known.Dots2).StartAsync(Strings.CheckDownloaderUpdate, async ctx => {
-   try {
-      using var http = new HttpClient(new SocketsHttpHandler() {
-         ConnectTimeout = TimeSpan.FromSeconds(3)
-      });
-      if (int.TryParse(await http.GetStringAsync(Path.Combine(downloaderUrl, "build-id")), out var v)) {
-         latestDownloaderVersion = v;
+await AnsiConsole.Status()
+   .Spinner(Spinner.Known.Dots2)
+   .StartAsync(Strings.CheckDownloaderUpdate, async ctx => {
+      try {
+         using var http = new HttpClient(new SocketsHttpHandler() {
+            ConnectTimeout = TimeSpan.FromSeconds(3)
+         });
+         if (int.TryParse(await http.GetStringAsync(Path.Combine(downloaderUrl, "build-id")), out var v)) {
+            latestDownloaderVersion = v;
+         }
+      } catch (Exception ex) {
+         AnsiConsole.WriteException(ex);
       }
-   } catch (Exception ex) {
-      AnsiConsole.WriteException(ex);
-   }
-});
+   });
 
 // If there's an update for downloader itself, ask user to make a choice.
 if (latestDownloaderVersion > DownloaderMeta.Version) {
    var updateSelf = AnsiConsole.Prompt(new SelectionPrompt<string>()
-      .Title(string.Format(Strings.UpdateDownloader, DownloaderMeta.Version, latestDownloaderVersion)).AddChoices(new[] {
+      .Title(string.Format(Strings.UpdateDownloader, DownloaderMeta.Version, latestDownloaderVersion))
+      .AddChoices(new[] {
          Strings.Yes, Strings.No
       }));
    if (updateSelf == Strings.Yes) {
@@ -193,7 +197,8 @@ Source GetSelectedSource(Sources srcs) {
 
 await AnsiConsole.Progress()
    .Columns(new TaskDescriptionColumn(), new ProgressBarColumn(), new PercentageColumn(),
-      new SpinnerColumn(Spinner.Known.Dots2)).StartAsync(async p => {
+      new SpinnerColumn(Spinner.Known.Dots2))
+   .StartAsync(async p => {
       var task = p.AddTask(Strings.UpdateSourcesJson);
 
       // Update sources.json if set.
@@ -223,15 +228,15 @@ await AnsiConsole.Progress()
                      }
                   }
                }
-               
+
                // If no enabled from new, use current
                if (newSourcesObj.sources.All(a => !a.enable)) {
-                  var s = GetSelectedSource(sources); 
+                  var s = GetSelectedSource(sources);
                   var ns = newSourcesObj.sources.FirstOrDefault(a => a.distributionUrl == s.distributionUrl);
                   if (ns != null) {
                      newSourcesObj.sources.ForEach(a => a.enable = false);
                      ns.enable = true;
-                  } 
+                  }
                }
 
                sources = newSourcesObj;
@@ -328,6 +333,34 @@ await AnsiConsole.Progress()
       var sw = new Stopwatch();
       sw.Start();
 
+      // If there's an old description file, and have update logs
+      if (File.Exists(descPath)) {
+         try {
+            var oldDesc = await JsonSerializer.DeserializeAsync(new MemoryStream(File.ReadAllBytes(descPath)),
+               DistDescriptionSerializer.Default.DistDescription);
+
+            // If any of the reinstall build id is larger than current 
+            if (desc.reinstallBuildId is {Count: > 0}) {
+               foreach (var id in desc.reinstallBuildId) {
+                  if (oldDesc.buildId < id) {
+                     AnsiConsole.Write($"[yellow]Removing existing files...[/]");
+                     Directory.Delete(distRoot, true);
+                     break;
+                  }
+               }
+            }
+
+            // Display needed logs
+            if (desc.updateLogs is {Count: > 0}) {
+               var logs = desc.updateLogs.Where(a => a.buildId > oldDesc.buildId).ToList();
+               logs.Sort((a, b) => b.buildId.CompareTo(a.buildId));
+               updateLogs.AddRange(logs);
+            }
+         } catch (Exception ex) {
+            AnsiConsole.WriteException(ex);
+         }
+      }
+
       // Compare checksum and download if mismatch.
       // Use parallel to speed up.
       await Parallel.ForEachAsync(desc.files, async (f, ct) => {
@@ -390,20 +423,6 @@ await AnsiConsole.Progress()
 
       task.Description = $"[cyan2]{sec:f2}s[/] " + Strings.DownloadedUpdateFiles;
 
-      // If there's an old description file, and have update logs
-      if (File.Exists(descPath) && desc.updateLogs is {Count: > 0}) {
-         try {
-            var oldDesc = await JsonSerializer.DeserializeAsync(new MemoryStream(File.ReadAllBytes(descPath)),
-               DistDescriptionSerializer.Default.DistDescription);
-            // Display needed logs
-            var logs = desc.updateLogs.Where(a => a.buildId > oldDesc.buildId).ToList();
-            logs.Sort((a, b) => b.buildId.CompareTo(a.buildId));
-            updateLogs.AddRange(logs);
-         } catch (Exception ex) {
-            AnsiConsole.WriteException(ex);
-         }
-      }
-
       File.WriteAllText(descPath, JsonSerializer.Serialize(desc, DistDescriptionSerializer.Default.DistDescription));
 
       if (!OperatingSystem.IsWindows()) {
@@ -445,8 +464,10 @@ if (updateLogs.Any()) {
 
 // Print a hint
 if (!string.IsNullOrWhiteSpace(projectName)) {
-   await AnsiConsole.Status().Spinner(Spinner.Known.Dots2).StartAsync(string.Format(Strings.UpdateDone, projectName),
-      async ctx => { await Task.Delay(TimeSpan.FromSeconds(2)); });
+   await AnsiConsole.Status()
+      .Spinner(Spinner.Known.Dots2)
+      .StartAsync(string.Format(Strings.UpdateDone, projectName),
+         async ctx => { await Task.Delay(TimeSpan.FromSeconds(2)); });
 }
 
 // If there's log.

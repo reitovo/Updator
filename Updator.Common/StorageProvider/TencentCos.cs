@@ -32,6 +32,9 @@ public class TencentCosConfig {
    // If you need refresh cdn, set root url
    // For example `https://dist.reito.fun/project-name/release`
    public string cdnRefreshRoot { get; set; }
+
+   // If you need refresh cdn directory
+   public string cdnRefreshPath { get; set; }
 }
 
 // Tencent COS as storage, it supports CDN refresh
@@ -44,7 +47,9 @@ public class TencentCos : IStorageProvider, ICdnRefresh {
 
       CosXmlConfig c = new CosXmlConfig.Builder()
          .SetRegion(config.region) // 设置默认的区域, COS 地域的简称请参照 https://cloud.tencent.com/document/product/436/6224  
-         .SetConnectionTimeoutMs(5000).Build();
+         .SetConnectionTimeoutMs(500000)
+         .SetReadWriteTimeoutMs(500000)
+         .Build();
 
       string secretId = config.secretId; // 云 API 密钥 SecretId, 获取 API 密钥请参照 https://console.cloud.tencent.com/cam/capi
       string
@@ -171,6 +176,43 @@ public class TencentCos : IStorageProvider, ICdnRefresh {
 
             // 返回的resp是一个PurgeUrlsCacheResponse的实例，与请求对象对应
             PurgeUrlsCacheResponse resp = await client.PurgeUrlsCache(req);
+            // 输出json格式的字符串回包
+            Debug.WriteLine(AbstractModel.ToJsonString(resp));
+         }
+      } catch (Exception ex) {
+         Debug.WriteLine(ex);
+      }
+   }
+
+   public async Task RefreshRoot() {
+      try {
+         if (!string.IsNullOrWhiteSpace(_config.cdnRefreshPath)) {
+            Credential cred = new Credential {
+               SecretId = _config.secretId,
+               SecretKey = _config.secretKey
+            };
+            // 实例化一个client选项，可选的，没有特殊需求可以跳过
+            ClientProfile clientProfile = new ClientProfile();
+            // 实例化一个http选项，可选的，没有特殊需求可以跳过
+            HttpProfile httpProfile = new HttpProfile {
+               Endpoint = ("cdn.tencentcloudapi.com")
+            };
+            clientProfile.HttpProfile = httpProfile;
+
+            // 实例化要请求产品的client对象,clientProfile是可选的
+            CdnClient client = new CdnClient(cred, _config.region, clientProfile);
+            // 实例化一个请求对象,每个接口都会对应一个request对象 
+            PurgePathCacheRequest req = new PurgePathCacheRequest() {
+               Paths = new[] {_config.cdnRefreshPath},
+               UrlEncode = true,
+               FlushType = "delete"
+            };
+
+            if (req.Paths.Length == 0)
+               return;
+
+            // 返回的resp是一个PurgeUrlsCacheResponse的实例，与请求对象对应
+            var resp = await client.PurgePathCache(req);
             // 输出json格式的字符串回包
             Debug.WriteLine(AbstractModel.ToJsonString(resp));
          }

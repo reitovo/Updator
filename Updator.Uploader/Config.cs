@@ -39,4 +39,7 @@ public class Config {
 
    // pass build id to executable as argument --<passBuildId>
    public string passBuildId { get; set; }
+
+   // If upgrading from older version than any of these, delete all before download
+   public List<int> reinstallBuildId { get; set; }
 }

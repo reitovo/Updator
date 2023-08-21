@@ -78,7 +78,7 @@ await Parallel.ForEachAsync(new DirectoryInfo(publishDir).GetFiles(), async (f, 
 });
 
 Console.WriteLine(@"Refresh CDN");
-await storage.RefreshObjectKeys(keys);
+await storage.RefreshRoot();
 
 Console.WriteLine(@"Done Tencent Cos");
 

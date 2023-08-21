@@ -41,4 +41,6 @@ public class DistDescription {
    // Update logs
    public List<DistUpdateLog> updateLogs { get; set; } = new();
    public string passBuildId { get; set; }
+   // Reinstall
+   public List<int> reinstallBuildId { get; set; }
 }
