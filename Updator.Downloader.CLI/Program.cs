@@ -343,7 +343,7 @@ await AnsiConsole.Progress()
             if (desc.reinstallBuildId is {Count: > 0}) {
                foreach (var id in desc.reinstallBuildId) {
                   if (oldDesc.buildId < id) {
-                     AnsiConsole.Write($"[yellow]Removing existing files...[/]");
+                     AnsiConsole.MarkupLine(Strings.RemoveOld);
                      Directory.Delete(distRoot, true);
                      break;
                   }

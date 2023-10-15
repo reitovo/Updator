@@ -205,7 +205,7 @@ public class TencentCos : IStorageProvider, ICdnRefresh {
             PurgePathCacheRequest req = new PurgePathCacheRequest() {
                Paths = new[] {_config.cdnRefreshPath},
                UrlEncode = true,
-               FlushType = "delete"
+               FlushType = "flush"
             };
 
             if (req.Paths.Length == 0)

@@ -10,7 +10,7 @@ public class Brotli : ICompressionProvider {
       await zipStream.FlushAsync();
       await dst.FlushAsync();
       await zipStream.DisposeAsync();
-      zipStream.Close();
+      zipStream.Close(); 
    }
 
    public async Task Decompress(Stream src, Stream dst) {

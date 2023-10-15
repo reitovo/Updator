@@ -150,6 +150,15 @@ namespace Updator.Downloader.CLI {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to [yellow]Removing existing files...[/].
+        /// </summary>
+        internal static string RemoveOld {
+            get {
+                return ResourceManager.GetString("RemoveOld", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to [palegreen1]Self update succeed.[/].
         /// </summary>
         internal static string SelfUpdateDone {

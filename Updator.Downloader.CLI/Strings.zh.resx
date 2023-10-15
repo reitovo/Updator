@@ -68,4 +68,7 @@
     <data name="FailedToMove" xml:space="preserve">
         <value>[red]无法将新版本写回原位置，请检查老版本窗口是否已关闭，或尝试手动删除老版本[/]</value>
     </data>
+    <data name="RemoveOld" xml:space="preserve">
+        <value>[yellow]本次版本升级将移除老文件[/]</value>
+    </data>
 </root>

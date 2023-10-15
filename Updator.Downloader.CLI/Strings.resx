@@ -75,4 +75,7 @@
     <data name="FailedToMove" xml:space="preserve">
         <value>[red]Cannot write new version back, please close/delete the old version manually.[/]</value>
     </data>
+    <data name="RemoveOld" xml:space="preserve">
+        <value>[yellow]Removing existing files...[/]</value>
+    </data>
 </root>
