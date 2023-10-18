@@ -8,6 +8,7 @@ using System.Text;
 using System.Text.Json;
 using Octokit;
 using Octokit.Internal;
+using Updator.Common.CompressionProvider;
 using Updator.Downloader.CLI;
 using Updator.Downloader.Publish;
 using Uploader.StorageProvider;
@@ -60,6 +61,13 @@ await Parallel.ForEachAsync(osList, new ParallelOptions() { MaxDegreeOfParalleli
    File.Copy(outputFile, Path.Combine(publishDir, $"cli-{os}"), true);
    var hash = SHA512.HashData(File.ReadAllBytes(outputFile));
    File.WriteAllBytes(Path.Combine(publishDir, $"cli-{os}.sha512"), hash);
+
+   using var decompressed = new MemoryStream(File.ReadAllBytes(outputFile));
+   using var compressed = new MemoryStream();
+   var brotli = new Brotli();
+   await brotli.Compress(decompressed, compressed);
+   compressed.Position = 0;
+   File.WriteAllBytes(Path.Combine(publishDir, $"brotli-cli-{os}"), compressed.ToArray());
 });
 // Write version file
 File.WriteAllText(Path.Combine(publishDir, $"build-id"), buildId.ToString());

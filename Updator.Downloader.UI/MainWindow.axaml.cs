@@ -73,9 +73,23 @@ public partial class MainWindow : Window {
    }
 
    private void SetProjectName(string name) {
+      if (string.IsNullOrWhiteSpace(name))
+         return;
+
       Dispatcher.UIThread.Invoke(() => {
          AppName.Content = name;
       });
+   }
+
+   private void SetAppIcon(string icon) {
+      if (string.IsNullOrWhiteSpace(icon))
+         return;
+
+      if (AppIcon.Source != icon) {
+         Dispatcher.UIThread.Invoke(() => {
+            AppIcon.Source = icon;
+         });
+      }
    }
 
    public async void InitializeSource(string sourcesPath, Sources sources) {
@@ -131,7 +145,7 @@ public partial class MainWindow : Window {
 
             // Download with progress
             // TODO: Extract this code in a extension.
-            var resp = await http.GetAsync(Path.Combine(downloaderUrl, $"cli-{env}"),
+            var resp = await http.GetAsync(Path.Combine(downloaderUrl, $"brotli-cli-{env}"),
                HttpCompletionOption.ResponseHeadersRead);
             var len = resp.Content.Headers.ContentLength!.Value;
             JobProgress.Maximum = len;
@@ -147,6 +161,14 @@ public partial class MainWindow : Window {
             }
 
             var payload = ms.ToArray();
+
+            var brotli = new Brotli();
+            using var compressed = new MemoryStream(payload);
+            using var decompressed = new MemoryStream();
+            await brotli.Decompress(compressed, decompressed);
+            decompressed.Position = 0;
+            payload = decompressed.ToArray();
+
             var hash = SHA512.HashData(payload);
 
             // Compare SHA512 checksum
@@ -154,7 +176,7 @@ public partial class MainWindow : Window {
                var name = Path.GetFileNameWithoutExtension(Environment.ProcessPath)!;
                var ext = Path.GetExtension(Environment.ProcessPath)!;
 
-               name = Regex.Replace(name, @"\s\(\d+\)", string.Empty);
+               name = Regex.Replace(name, @"\(\d+\)", string.Empty);
 
                var file = $"{name}({latestDownloaderVersion}){ext}";
                await File.WriteAllBytesAsync(file, payload);
@@ -168,11 +190,10 @@ public partial class MainWindow : Window {
                   CreateNoWindow = false,
                   Arguments = $"--delete \"{Environment.ProcessPath}\""
                });
+               Dispatcher.UIThread.InvokeShutdown();
             } else {
                Popup.Exception("更新校验失败");
             }
-
-            Dispatcher.UIThread.InvokeShutdown();
             return;
          }
       }
@@ -262,11 +283,7 @@ public partial class MainWindow : Window {
       }
 
       SetProjectName(source.defaultName);
-      if (!string.IsNullOrWhiteSpace(source.defaultIcon)) {
-         Dispatcher.UIThread.Invoke(() => {
-            AppIcon.Source = source.defaultIcon;
-         });
-      }
+      SetAppIcon(sources.defaultIcon);
 
       DistDescription desc;
       SetJobName(Strings.DownloadDescription);
@@ -290,9 +307,7 @@ public partial class MainWindow : Window {
       SetProjectName(desc.projectName);
       Dispatcher.UIThread.Invoke(() => {
          AppVersion.Content = $"{desc.versionString} ({desc.buildId})";
-         if (!string.IsNullOrWhiteSpace(desc.appIconUrl)) {
-            AppIcon.Source = desc.appIconUrl;
-         }
+         SetAppIcon(desc.appIconUrl);
       });
 
       // Restore compression provider
