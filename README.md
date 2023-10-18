@@ -7,7 +7,7 @@
 
 本项目包含:
 - `Updator.Uploader` 用来上传你的应用至一个云端，目前支持`腾讯云COS`且支持CDN刷新，采用接口设计，也可以很快地为其他云端实现上传机制。
-- `Updator.Downloader.CLI` 用来提供给用户下载你的应用，目前使用纯HTTP(S)下载，因为云服务对象储存通常都是这种方式
+- `Updator.Downloader.CLI` 用简易控制台界面，来提供给用户下载你的应用，目前使用纯HTTP(S)下载，因为云服务对象储存通常都是这种方式
 - `Updator.Downloader.UI` 使用 AvaloniaUI 制作了一个简易的界面，提高美观性
 
 此外：
@@ -19,9 +19,9 @@
 
 ![QQ截图20230111140207](https://user-images.githubusercontent.com/29846655/211731428-c8034a7a-d7fc-46ce-8a18-1ac3b09b69a6.png)
 
-`Updator.Downloader.UI` 使用了 AvaloniaUI
+`Updator.Downloader.UI` 使用了 [AvaloniaUI](https://avaloniaui.net/)
 
-![img.png](img.png)
+![image](https://github.com/cnSchwarzer/Updator/assets/29846655/09d3e25f-e8e5-4d6c-a06c-b2cf43cc6d7f)
 
 ## Uploader 
 程序通过解析 `config.json` 来上传至一个云服务
