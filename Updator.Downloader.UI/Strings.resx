@@ -1,0 +1,66 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<root>
+    <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+        <xsd:element name="root" msdata:IsDataSet="true">
+
+        </xsd:element>
+    </xsd:schema>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>1.3</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="SourcesNotFound" xml:space="preserve">
+        <value>File sources.json not found. Please reinstall application.</value>
+    </data>
+    <data name="UpdateSourcesJson" xml:space="preserve">
+        <value>Downloading source</value>
+    </data>
+    <data name="ShouldUniqueSource" xml:space="preserve">
+        <value>There should only be one enabled source in [underline red]sources.json[/]. Please check again!</value>
+    </data>
+    <data name="DownloadDescription" xml:space="preserve">
+        <value>Downloading description</value>
+    </data>
+    <data name="DownloadUpdateFiles" xml:space="preserve">
+        <value>Downloading files</value>
+    </data>
+    <data name="UpdateDone" xml:space="preserve">
+        <value>Update complete, launching {0}</value>
+    </data>
+    <data name="UpdateDownloaderAsk" xml:space="preserve">
+        <value>Found new version of launcher ({0} -&gt; {1}), update now?</value>
+    </data>
+    <data name="RequestFailed" xml:space="preserve">
+        <value>Request failed</value>
+    </data>
+    <data name="Error" xml:space="preserve">
+        <value>Error</value>
+    </data>
+    <data name="Update" xml:space="preserve">
+        <value>Update</value>
+    </data>
+    <data name="Yes" xml:space="preserve">
+        <value>Yes</value>
+    </data>
+    <data name="No" xml:space="preserve">
+        <value>No</value>
+    </data>
+    <data name="UpdateDownloader" xml:space="preserve">
+        <value>Downloading updator</value>
+    </data>
+    <data name="UpdateFinishRestartUpdator" xml:space="preserve">
+        <value>Update finished, please restart updator</value>
+    </data>
+    <data name="ShowUpdateLog" xml:space="preserve">
+        <value>Open update logs?</value>
+    </data>
+</root>

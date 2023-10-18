@@ -78,4 +78,16 @@
     <data name="RemoveOld" xml:space="preserve">
         <value>[yellow]Removing existing files...[/]</value>
     </data>
+    <data name="MacStartHint" xml:space="preserve">
+        <value>[yellow]If macOS user doesn't see the program start, please try launch again[/]</value>
+    </data>
+    <data name="StartFailed" xml:space="preserve">
+        <value>[red]Start failed, please try again[/]</value>
+    </data>
+    <data name="MacStartTerminal" xml:space="preserve">
+        <value>[yellow]Please run from terminal, do not double-click[/]</value>
+    </data>
+    <data name="MacManualUpdate" xml:space="preserve">
+        <value>[yellow]If not update properly, run this in terminal manually:[/]</value>
+    </data>
 </root>

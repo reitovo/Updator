@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Globalization;
+using System.Reflection;
 using System.Security.AccessControl;
 using System.Security.Cryptography;
 using System.Text;
@@ -9,21 +10,20 @@ using Spectre.Console;
 using Updator.Common;
 using Updator.Common.ChecksumProvider;
 using Updator.Common.CompressionProvider;
+using Updator.Common.Downloader;
 using Updator.Downloader;
 using Updator.Downloader.CLI;
 
 void Exec(string cmd) {
    var escapedArgs = cmd.Replace("\"", "\\\"");
 
-   using var process = new Process {
-      StartInfo = new ProcessStartInfo {
-         RedirectStandardOutput = true,
-         UseShellExecute = false,
-         CreateNoWindow = true,
-         WindowStyle = ProcessWindowStyle.Hidden,
-         FileName = "/bin/bash",
-         Arguments = $"-c \"{escapedArgs}\""
-      }
+   using var process = new Process();
+   process.StartInfo = new ProcessStartInfo {
+      RedirectStandardOutput = true,
+      CreateNoWindow = true,
+      WindowStyle = ProcessWindowStyle.Hidden,
+      FileName = "/bin/bash",
+      Arguments = $"-c \"{escapedArgs}\""
    };
 
    process.Start();
@@ -36,6 +36,10 @@ AnsiConsole.Profile.Encoding = Encoding.UTF8;
 
 // Print a hint if the program hangs too long
 AnsiConsole.MarkupLine(Strings.KillWhenTooLong);
+
+if (OperatingSystem.IsMacOS()) {
+   AnsiConsole.MarkupLine(Strings.MacStartTerminal);
+}
 
 // If the program is started by self-update procedure
 if (args.Length == 3) {
@@ -102,6 +106,7 @@ if (args.Length == 3) {
                      Process.Start(new ProcessStartInfo() {
                         FileName = writeBack,
                         CreateNoWindow = false,
+                        WorkingDirectory = Path.GetDirectoryName(writeBack)!,
                         UseShellExecute = true
                      });
                   } else {
@@ -118,6 +123,14 @@ if (args.Length == 3) {
       await Task.Delay(TimeSpan.FromSeconds(3));
       return;
    }
+}
+
+// Set pwd to current directory 
+var processModule = Process.GetCurrentProcess().MainModule;
+if (processModule != null) {
+   var pwd = Path.GetDirectoryName(processModule.FileName);
+   if (!string.IsNullOrWhiteSpace(pwd))
+      Environment.CurrentDirectory = pwd;
 }
 
 // Default downloader self-update url.
@@ -160,24 +173,41 @@ await AnsiConsole.Status()
    });
 
 // If there's an update for downloader itself, ask user to make a choice.
-if (latestDownloaderVersion > DownloaderMeta.Version) {
+if (latestDownloaderVersion > Meta.Version) {
    var updateSelf = AnsiConsole.Prompt(new SelectionPrompt<string>()
-      .Title(string.Format(Strings.UpdateDownloader, DownloaderMeta.Version, latestDownloaderVersion))
+      .Title(string.Format(Strings.UpdateDownloader, Meta.Version, latestDownloaderVersion))
       .AddChoices(new[] {
          Strings.Yes, Strings.No
       }));
    if (updateSelf == Strings.Yes) {
       // Copy itself to a temp file and run self-update procedure.
-      var temp = Path.GetTempFileName() + ".exe";
-      var current = Environment.ProcessPath!;
-      File.Copy(current, temp, true);
-      Process.Start(new ProcessStartInfo() {
-         FileName = temp,
-         Arguments = $"""self-update "{current}" "{downloaderUrl}" """,
-         CreateNoWindow = false,
-         UseShellExecute = true
-      });
-      return;
+      if (OperatingSystem.IsWindows()) {
+         var temp = Path.GetTempFileName() + ".exe";
+         var current = Environment.ProcessPath!;
+         File.Copy(current, temp, true);
+         Process.Start(new ProcessStartInfo() {
+            FileName = temp,
+            Arguments = $"""self-update "{current}" "{downloaderUrl}" """,
+            CreateNoWindow = false,
+            UseShellExecute = true
+         });
+         return;
+      } else {
+         var temp = Path.GetTempFileName();
+         var current = Environment.ProcessPath!;
+         File.Copy(current, temp, true);
+         Exec($"chmod +x {temp}");
+         Process.Start(new ProcessStartInfo() {
+            FileName = temp,
+            Arguments = $"""self-update "{current}" "{downloaderUrl}" """,
+            CreateNoWindow = false,
+            WorkingDirectory = Path.GetDirectoryName(temp)!,
+            UseShellExecute = true
+         });
+         AnsiConsole.MarkupLine(Strings.MacManualUpdate);
+         AnsiConsole.WriteLine($"{temp} \\\nself-update \\\n\"{current}\" \\\n\"{downloaderUrl}\"");
+         return;
+      }
    }
 }
 
@@ -320,7 +350,7 @@ await AnsiConsole.Progress()
       }
 
       task = p.AddTask(Strings.DownloadUpdateFiles);
-      var distRoot = new DirectoryInfo(desc.channel).FullName;
+      var distRoot = new DirectoryInfo(Path.Combine(Environment.CurrentDirectory, desc.channel)).FullName;
       var executable = Path.Combine(distRoot, desc.executable);
       var descPath = Path.Combine(distRoot, "__description.json");
 
@@ -340,7 +370,7 @@ await AnsiConsole.Progress()
                DistDescriptionSerializer.Default.DistDescription);
 
             // If any of the reinstall build id is larger than current 
-            if (desc.reinstallBuildId is {Count: > 0}) {
+            if (desc.reinstallBuildId is { Count: > 0 }) {
                foreach (var id in desc.reinstallBuildId) {
                   if (oldDesc.buildId < id) {
                      AnsiConsole.MarkupLine(Strings.RemoveOld);
@@ -351,7 +381,7 @@ await AnsiConsole.Progress()
             }
 
             // Display needed logs
-            if (desc.updateLogs is {Count: > 0}) {
+            if (desc.updateLogs is { Count: > 0 }) {
                var logs = desc.updateLogs.Where(a => a.buildId > oldDesc.buildId).ToList();
                logs.Sort((a, b) => b.buildId.CompareTo(a.buildId));
                updateLogs.AddRange(logs);
@@ -435,13 +465,25 @@ await AnsiConsole.Progress()
       }
 
       // Start the payload executable
-      Process.Start(new ProcessStartInfo() {
-         FileName = executable,
-         WorkingDirectory = new DirectoryInfo(executable).Parent!.FullName,
-         Arguments = passArgument,
-         UseShellExecute = true
-      });
+      try {
+         var ret = Process.Start(new ProcessStartInfo() {
+            FileName = executable,
+            WorkingDirectory = new DirectoryInfo(executable).Parent!.FullName,
+            Arguments = passArgument,
+            UseShellExecute = true
+         });
+
+         if (ret.HasExited) {
+            AnsiConsole.MarkupLine(Strings.StartFailed);
+         }
+      } catch (Exception ex) {
+         AnsiConsole.WriteException(ex);
+      }
    });
+
+if (OperatingSystem.IsMacOS()) {
+   AnsiConsole.MarkupLine(Strings.MacStartHint);
+}
 
 // If any printable update logs.
 if (updateLogs.Any()) {

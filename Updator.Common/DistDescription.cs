@@ -43,4 +43,7 @@ public class DistDescription {
    public string passBuildId { get; set; }
    // Reinstall
    public List<int> reinstallBuildId { get; set; }
+
+   public string updateLogUrl { get; set; }
+   public string appIconUrl { get; set; }
 }

@@ -1,0 +1,26 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:asyncImageLoader="clr-namespace:AsyncImageLoader;assembly=AsyncImageLoader.Avalonia"
+        mc:Ignorable="d" Width="500" Height="350" Background="#E8E8E8"
+        WindowStartupLocation="CenterScreen"
+        x:Class="Updator.Downloader.UI.MainWindow"
+        Title="启动器" Icon="Icon.ico">
+    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+        <asyncImageLoader:AdvancedImage Name="AppIcon" Width="120" Height="120" Source="Icon.ico"> </asyncImageLoader:AdvancedImage>
+        <Label FontSize="40" FontFamily="Source Han Sans SC VF, Source Han Sans SC, 等线, 微软雅黑" Name="AppName"
+               HorizontalAlignment="Center" VerticalAlignment="Center">
+        </Label>
+        <Label FontSize="12" FontFamily="Source Han Sans SC VF, Source Han Sans SC, 等线, 微软雅黑" Name="AppVersion"
+               HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0 0 0 20">
+        </Label>
+        <ProgressBar Name="JobProgress" Width="400"
+                     HorizontalAlignment="Center"
+                     VerticalAlignment="Center" Margin="0 0 0 5">
+        </ProgressBar>
+        <Label FontSize="15" FontFamily="Source Han Sans SC VF, Source Han Sans SC, 等线, 微软雅黑" Name="JobName"
+               HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0 0 0 10">
+        </Label>
+    </StackPanel>
+</Window>

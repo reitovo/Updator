@@ -1,0 +1,59 @@
+<root>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>1.3</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    </resheader>
+    <data name="SourcesNotFound" xml:space="preserve">
+        <value>找不到 sources.json，请重新安装软件</value>
+    </data>
+    <data name="UpdateSourcesJson" xml:space="preserve">
+        <value>更新软件源</value>
+    </data>
+    <data name="ShouldUniqueSource" xml:space="preserve">
+        <value>应当仅存在1个启用的来源，请检查[underline red]sources.json[/]</value>
+    </data>
+    <data name="DownloadDescription" xml:space="preserve">
+        <value>更新元数据</value>
+    </data>
+    <data name="DownloadUpdateFiles" xml:space="preserve">
+        <value>更新文件</value>
+    </data>
+    <data name="UpdateDone" xml:space="preserve">
+        <value>更新完成，启动 {0} 中</value>
+    </data>
+    <data name="UpdateDownloaderAsk" xml:space="preserve">
+        <value>发现新版本启动器 ({0} -&gt; {1})，是否更新？</value>
+    </data>
+    <data name="RequestFailed" xml:space="preserve">
+        <value>请求更新错误</value>
+    </data>
+    <data name="Error" xml:space="preserve">
+        <value>错误</value>
+    </data>
+    <data name="Update" xml:space="preserve">
+        <value>更新</value>
+    </data>
+    <data name="Yes" xml:space="preserve">
+        <value>是</value>
+    </data>
+    <data name="No" xml:space="preserve">
+        <value>否</value>
+    </data>
+    <data name="UpdateDownloader" xml:space="preserve">
+        <value>更新启动器</value>
+    </data>
+    <data name="UpdateFinishRestartUpdator" xml:space="preserve">
+        <value>更新完成，请重新运行启动器</value>
+    </data>
+    <data name="ShowUpdateLog" xml:space="preserve">
+        <value>查看更新日志？</value>
+    </data>
+</root>

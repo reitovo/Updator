@@ -1,0 +1,25 @@
+﻿<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" MinWidth="300" MinHeight="150" SizeToContent="WidthAndHeight" Background="#E8E8E8"
+        WindowStartupLocation="CenterScreen"
+        x:Class="Updator.Downloader.UI.Popup"
+        Title="提示">
+    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+        <Label FontSize="20" Content="错误" FontFamily="Source Han Sans SC VF, Source Han Sans SC, 等线, 微软雅黑"
+               Name="TitleText"
+               HorizontalAlignment="Center" VerticalAlignment="Center">
+        </Label>
+        <Label FontSize="15" Content="错误" FontFamily="Source Han Sans SC VF, Source Han Sans SC, 等线, 微软雅黑"
+               Name="Summary"
+               HorizontalAlignment="Center" VerticalAlignment="Center">
+        </Label>
+        <Label Margin="30, 5, 30, 10" MaxWidth="700" FontSize="12"
+               Content="测试"
+               FontFamily="Source Han Sans SC VF, Source Han Sans SC, 等线, 微软雅黑"
+               Name="Detail"
+               HorizontalAlignment="Center" VerticalAlignment="Center">
+        </Label>
+    </StackPanel>
+</Window>

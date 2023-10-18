@@ -141,6 +141,33 @@ namespace Updator.Downloader.CLI {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to [yellow]If not update properly, run this in terminal manually:[/].
+        /// </summary>
+        internal static string MacManualUpdate {
+            get {
+                return ResourceManager.GetString("MacManualUpdate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to [yellow]If macOS user doesn&apos;t see the program start, please try launch again[/].
+        /// </summary>
+        internal static string MacStartHint {
+            get {
+                return ResourceManager.GetString("MacStartHint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to [yellow]Please run from terminal, do not double-click[/].
+        /// </summary>
+        internal static string MacStartTerminal {
+            get {
+                return ResourceManager.GetString("MacStartTerminal", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to [red]No[/].
         /// </summary>
         internal static string No {
@@ -182,6 +209,15 @@ namespace Updator.Downloader.CLI {
         internal static string SourcesNotFound {
             get {
                 return ResourceManager.GetString("SourcesNotFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to [red]Start failed, please try again[/].
+        /// </summary>
+        internal static string StartFailed {
+            get {
+                return ResourceManager.GetString("StartFailed", resourceCulture);
             }
         }
         

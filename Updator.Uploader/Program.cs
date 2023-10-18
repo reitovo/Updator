@@ -69,7 +69,7 @@ if (!string.IsNullOrWhiteSpace(options.Base64ConfigFile))
 
 if (!File.Exists("./config.json"))
 {
-    File.WriteAllText("./config.json", JsonSerializer.Serialize(new Config(), new JsonSerializerOptions()
+    File.WriteAllText("./config.json", JsonSerializer.Serialize(new UploadConfig(), new JsonSerializerOptions()
     {
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
         WriteIndented = true,
@@ -85,7 +85,7 @@ if (string.IsNullOrWhiteSpace(configString))
     configPath = "./config.json";
 }
 
-var config = JsonDocument.Parse(configString).Deserialize<Config>();
+var config = JsonDocument.Parse(configString).Deserialize<UploadConfig>();
 
 if (!string.IsNullOrWhiteSpace(options.DistributionRoot))
 {
@@ -141,7 +141,9 @@ var desc = new DistDescription
     checksum = config.checksum,
     updateLogs = config.updateLogs?.ToList(),
     passBuildId = config.passBuildId,
-    reinstallBuildId = config.reinstallBuildId?.ToList()
+    reinstallBuildId = config.reinstallBuildId?.ToList(),
+    updateLogUrl = config.updateLogUrl,
+    appIconUrl = config.appIconUrl
 };
 
 // Check old description

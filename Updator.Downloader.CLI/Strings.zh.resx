@@ -71,4 +71,16 @@
     <data name="RemoveOld" xml:space="preserve">
         <value>[yellow]本次版本升级将移除老文件[/]</value>
     </data>
+    <data name="MacStartHint" xml:space="preserve">
+        <value>[yellow]对于 macOS 用户，初次启动可能等待稍久。如果长时间启动无反应，请尝试再次启动[/]</value>
+    </data>
+    <data name="StartFailed" xml:space="preserve">
+        <value>[red]启动失败，请重试[/]</value>
+    </data>
+    <data name="MacStartTerminal" xml:space="preserve">
+        <value>[yellow]对于 macOS 用户，请启动终端运行本程序，否则可能无法运行或更新[/]</value>
+    </data>
+    <data name="MacManualUpdate" xml:space="preserve">
+        <value>[yellow]如果没有自动更新，请复制以下命令并在终端中执行[/]</value>
+    </data>
 </root>
