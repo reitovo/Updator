@@ -29,10 +29,10 @@ class Program {
          try {
             if (!string.IsNullOrWhiteSpace(val.DeleteFile)) {
                Task.Run(async () => {
-                  var deleteRetry = 3;
+                  var deleteRetry = 5;
                retryDelete:
                   try {
-                     await Task.Delay(TimeSpan.FromSeconds(3));
+                     await Task.Delay(TimeSpan.FromSeconds(1));
                      File.Delete(val.DeleteFile);
                   } catch (Exception ex) {
                      Debug.WriteLine(ex);

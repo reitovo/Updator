@@ -28,12 +28,32 @@ public partial class MainWindow : Window {
       InitializeComponent();
 
       AppIcon.Loader = new DiskCachedWebImageLoader();
-      AppIcon.Source = "Icon.ico";
-   }
 
-   protected override void OnOpened(EventArgs e) {
-      base.OnOpened(e);
-      InitializeSource();
+      // Reads sources.json
+      var sourcesPath = "./sources.json";
+      if (!File.Exists(sourcesPath)) {
+         sourcesPath = Path.Combine(Directory.GetParent(Environment.ProcessPath!)!.FullName, "sources.json");
+         if (!File.Exists(sourcesPath)) {
+            Popup.Exception(Strings.SourcesNotFound);
+            return;
+         }
+      }
+
+      var sources = JsonSerializer.Deserialize(new MemoryStream(File.ReadAllBytes(sourcesPath)),
+         SourcesSerializer.Default.Sources);
+      if (sources == null) {
+         Popup.Exception(Strings.SourcesNotFound);
+         return;
+      }
+
+      SetProjectName(sources.defaultName);
+      if (!string.IsNullOrWhiteSpace(sources.defaultIcon)) {
+         AppIcon.Source = sources.defaultIcon;
+      } else {
+         AppIcon.Source = "Icon.ico";
+      }
+
+      InitializeSource(sourcesPath, sources);
    }
 
    private void Exec(string cmd) {
@@ -52,34 +72,15 @@ public partial class MainWindow : Window {
       process.WaitForExit();
    }
 
-   public async void InitializeSource() {
+   private void SetProjectName(string name) {
+      Dispatcher.UIThread.Invoke(() => {
+         AppName.Content = name;
+      });
+   }
+
+   public async void InitializeSource(string sourcesPath, Sources sources) {
       // Default downloader self-update url.
       var downloaderUrl = "https://github.com/cnSchwarzer/Updator/releases/latest/download";
-
-      // Reads sources.json
-      var sourcesPath = "./sources.json";
-      if (!File.Exists(sourcesPath)) {
-         sourcesPath = Path.Combine(Directory.GetParent(Environment.ProcessPath!)!.FullName, "sources.json");
-         if (!File.Exists(sourcesPath)) {
-            Popup.Exception(Strings.SourcesNotFound);
-            return;
-         }
-      }
-
-      var sources = await JsonSerializer.DeserializeAsync(new MemoryStream(File.ReadAllBytes(sourcesPath)),
-         SourcesSerializer.Default.Sources);
-      if (sources == null) {
-         Popup.Exception(Strings.SourcesNotFound);
-         return;
-      }
-
-      void SetProjectName(string name) {
-         Dispatcher.UIThread.Invoke(() => {
-            AppName.Content = name;
-         });
-      }
-
-      SetProjectName(sources.defaultName);
 
       // If there's custom downloader url, replace it
       if (!string.IsNullOrWhiteSpace(sources.customDownloaderUrl)) {
@@ -261,6 +262,11 @@ public partial class MainWindow : Window {
       }
 
       SetProjectName(source.defaultName);
+      if (!string.IsNullOrWhiteSpace(source.defaultIcon)) {
+         Dispatcher.UIThread.Invoke(() => {
+            AppIcon.Source = source.defaultIcon;
+         });
+      }
 
       DistDescription desc;
       SetJobName(Strings.DownloadDescription);

@@ -16,6 +16,7 @@ public class Source {
    public string distributionUrl { get; set; }
 
    public string defaultName { get; set; }
+   public string defaultIcon { get; set; }
 }
 
 public class Sources {
@@ -27,7 +28,9 @@ public class Sources {
    public string customDownloaderUrl { get; set; }
    // Disable auto update sources.json
    public bool disableSourcesUpdate { get; set; }
+   
    public string defaultName { get; set; }
+   public string defaultIcon { get; set; }
 
    // Set the default source id
    public string defaultSourceId { get; set; }
