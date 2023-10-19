@@ -11,19 +11,7 @@ public static class App {
    public static string AppLocalDataFolder =>
       Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Reito", "Updator");
 
-   static App() {
-      if (OperatingSystem.IsMacOS()) {
-         var pwd = Process.GetCurrentProcess().MainModule?.FileName;
-         if (!string.IsNullOrWhiteSpace(pwd)) {
-            var match = ".app/Contents/MacOS";
-            if (pwd.Contains(match)) {
-               pwd = pwd[..pwd.IndexOf(match, StringComparison.Ordinal)];
-               pwd = pwd[..pwd.LastIndexOf('/')];
-               Environment.CurrentDirectory = pwd;
-            }
-         }
-      } 
-      
+   static App() { 
       Directory.CreateDirectory(AppLocalDataFolder);
       LogFactory = LoggerFactory.Create(builder => {
          builder.AddSimpleConsole(o => {

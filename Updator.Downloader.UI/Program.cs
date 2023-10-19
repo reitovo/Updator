@@ -21,6 +21,19 @@ class Program {
 
          App.AppLog.LogInformation($"启动器 {Meta.RuntimeString} {Meta.RuntimeVersion}"); 
          App.AppLog.LogInformation($"工作目录 {Environment.CurrentDirectory}");
+         
+         if (OperatingSystem.IsMacOS()) {
+            var pwd = Process.GetCurrentProcess().MainModule?.FileName;
+            if (!string.IsNullOrWhiteSpace(pwd)) {
+               var match = ".app/Contents/MacOS";
+               if (pwd.Contains(match)) {
+                  pwd = pwd[..pwd.IndexOf(match, StringComparison.Ordinal)];
+                  pwd = pwd[..pwd.LastIndexOf('/')];
+                  Environment.CurrentDirectory = pwd;
+                  App.AppLog.LogInformation($"改变工作目录 {Environment.CurrentDirectory}");
+               }
+            }
+         } 
 
          var parsed = new Parser(a => {
             a.AllowMultiInstance = true;
