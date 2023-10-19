@@ -41,9 +41,9 @@ public partial class MainWindow : Window {
          // Reads sources.json
          var sourcesPath = Path.Combine(Environment.CurrentDirectory, "sources.json");
          App.AppLog.LogInformation($"源：{sourcesPath}");
-         if (!File.Exists(sourcesPath)) { 
-            Popup.Exception(Strings.SourcesNotFound); 
-         } 
+         if (!File.Exists(sourcesPath)) {
+            Popup.Exception(Strings.SourcesNotFound);
+         }
 
          var sources = JsonSerializer.Deserialize(new MemoryStream(File.ReadAllBytes(sourcesPath)),
             SourcesSerializer.Default.Sources);
@@ -152,7 +152,7 @@ public partial class MainWindow : Window {
                      FontFamily = App.FontFamily,
                      WindowStartupLocation = WindowStartupLocation.CenterScreen
                   })
-                  .ShowAsync();
+                 .ShowAsync();
             });
 
             if (result == Strings.Yes) {
@@ -270,6 +270,7 @@ public partial class MainWindow : Window {
                SetProgressBar(95);
 
                App.AppLog.LogInformation($"解析新软件源 {newSourcesObj.version} {sources.version}");
+
                // Replace the file if the remote one is newer.
                if (newSourcesObj.version > sources.version) {
                   // If user changed source, try keep it.
@@ -370,7 +371,6 @@ public partial class MainWindow : Window {
 
          SetJobName(Strings.DownloadUpdateFiles);
          var distRoot = new DirectoryInfo(Path.Combine(Environment.CurrentDirectory, desc.channel)).FullName;
-         var executable = Path.Combine(distRoot, desc.executable);
          var descPath = Path.Combine(distRoot, "__description.json");
 
          App.AppLog.LogInformation($"写入目录 {distRoot}");
@@ -422,6 +422,7 @@ public partial class MainWindow : Window {
          }
 
          App.AppLog.LogInformation($"执行更新");
+
          // Compare checksum and download if mismatch.
          // Use parallel to speed up.
          await Parallel.ForEachAsync(desc.files, async (f, ct) => {
@@ -497,12 +498,28 @@ public partial class MainWindow : Window {
          App.AppLog.LogInformation($"启动软件");
 
          // Start the payload executable 
-         Process.Start(new ProcessStartInfo() {
-            FileName = executable,
-            WorkingDirectory = new DirectoryInfo(executable).Parent!.FullName,
-            Arguments = passArgument,
-            UseShellExecute = true
-         });
+         if (OperatingSystem.IsMacOS()) {
+            var executable = Path.Combine(distRoot, desc.osxAppBundle, "Contents", "MacOS", desc.executable);
+            Exec($"chmod +x \"{executable}\"");
+            Process.Start(new ProcessStartInfo() {
+               FileName = Path.Combine(distRoot, desc.osxAppBundle),
+               WorkingDirectory = distRoot,
+               Arguments = passArgument,
+               UseShellExecute = true
+            });
+         } else {
+            var executable = Path.Combine(distRoot, desc.executable);
+            if (OperatingSystem.IsLinux()) {
+               Exec($"chmod +x \"{executable}\"");
+            }
+
+            Process.Start(new ProcessStartInfo() {
+               FileName = executable,
+               WorkingDirectory = new DirectoryInfo(executable).Parent!.FullName,
+               Arguments = passArgument,
+               UseShellExecute = true
+            });
+         }
 
          if (displayUpdateLog && !string.IsNullOrWhiteSpace(desc.updateLogUrl)) {
             var result = await Dispatcher.UIThread.Invoke(async () => {
@@ -520,11 +537,13 @@ public partial class MainWindow : Window {
                      FontFamily = App.FontFamily,
                      WindowStartupLocation = WindowStartupLocation.CenterScreen
                   })
-                  .ShowAsync();
+                 .ShowAsync();
             });
 
             if (result == Strings.Yes) {
-               Process.Start(new ProcessStartInfo(desc.updateLogUrl) { UseShellExecute = true });
+               Process.Start(new ProcessStartInfo(desc.updateLogUrl) {
+                  UseShellExecute = true
+               });
             }
          }
 

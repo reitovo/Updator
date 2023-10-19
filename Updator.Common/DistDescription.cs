@@ -36,6 +36,7 @@ public class DistDescription {
    // The executable file relative path.
    // For example `bin/program.exe`
    public string executable { get; set; }
+   public string osxAppBundle { get; set; }
    // Uploaded files
    public List<DistFile> files { get; set; } = new();
    // Update logs
