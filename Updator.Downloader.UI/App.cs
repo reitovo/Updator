@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using Avalonia.Media;
 using Microsoft.Extensions.Logging;
 namespace Updator.Downloader.UI;
 
@@ -31,4 +32,5 @@ public static class App {
       });
 
    public static ILogger AppLog { get; } = LogFactory.CreateLogger("App");
+   public static FontFamily FontFamily => "PingFang SC, Source Han Sans SC VF, Source Han Sans SC, 等线, 微软雅黑";
 }

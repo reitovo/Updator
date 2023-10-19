@@ -29,6 +29,8 @@ public partial class MainWindow : Window {
       try {
          InitializeComponent();
          AppIcon.Loader = new DiskCachedWebImageLoader(Path.Combine(App.AppLocalDataFolder, "cache/image"));
+         AppVersion.Content = Strings.LoadingVersion;
+         JobName.Content = Strings.Ready;
 
          // Reads sources.json
          var sourcesPath = "./sources.json";
@@ -68,7 +70,10 @@ public partial class MainWindow : Window {
    }
 
    private void Exec(string cmd) {
-      var escapedArgs = cmd.Replace("\"", "\\\"");
+      var escapeList = @"$#&*?;|<>(){}[]`'~!".Append('"');
+      foreach (char escape in escapeList) {
+         cmd = cmd.Replace(escape.ToString(), @$"\{escape}");
+      }
 
       using var process = new Process();
       process.StartInfo = new ProcessStartInfo {
@@ -76,7 +81,7 @@ public partial class MainWindow : Window {
          CreateNoWindow = true,
          WindowStyle = ProcessWindowStyle.Hidden,
          FileName = "/bin/bash",
-         Arguments = $"-c \"{escapedArgs}\""
+         Arguments = $"-c \"{cmd}\""
       };
 
       process.Start();
@@ -141,7 +146,7 @@ public partial class MainWindow : Window {
                         Name = Strings.No
                      }
                   },
-                  FontFamily = "Source Han Sans SC VF, Source Han Sans SC, 等线, 微软雅黑",
+                  FontFamily = App.FontFamily,
                   WindowStartupLocation = WindowStartupLocation.CenterScreen
                })
                .ShowAsync();
@@ -505,7 +510,7 @@ public partial class MainWindow : Window {
                         Name = Strings.No
                      }
                   },
-                  FontFamily = "Source Han Sans SC VF, Source Han Sans SC, 等线, 微软雅黑",
+                  FontFamily = App.FontFamily,
                   WindowStartupLocation = WindowStartupLocation.CenterScreen
                })
                .ShowAsync();

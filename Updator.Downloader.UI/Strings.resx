@@ -57,10 +57,13 @@
     <data name="UpdateDownloader" xml:space="preserve">
         <value>Downloading updator</value>
     </data>
-    <data name="UpdateFinishRestartUpdator" xml:space="preserve">
-        <value>Update finished, please restart updator</value>
+    <data name="LoadingVersion" xml:space="preserve">
+        <value>Loading</value>
     </data>
     <data name="ShowUpdateLog" xml:space="preserve">
         <value>Open update logs?</value>
+    </data>
+    <data name="Ready" xml:space="preserve">
+        <value>Ready</value>
     </data>
 </root>

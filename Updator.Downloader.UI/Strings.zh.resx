@@ -50,10 +50,13 @@
     <data name="UpdateDownloader" xml:space="preserve">
         <value>更新启动器</value>
     </data>
-    <data name="UpdateFinishRestartUpdator" xml:space="preserve">
-        <value>更新完成，请重新运行启动器</value>
+    <data name="LoadingVersion" xml:space="preserve">
+        <value>正在获取版本号</value>
     </data>
     <data name="ShowUpdateLog" xml:space="preserve">
         <value>查看更新日志？</value>
+    </data>
+    <data name="Ready" xml:space="preserve">
+        <value>就绪</value>
     </data>
 </root>

@@ -87,11 +87,29 @@ namespace Updator.Downloader.UI {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Loading.
+        /// </summary>
+        internal static string LoadingVersion {
+            get {
+                return ResourceManager.GetString("LoadingVersion", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to No.
         /// </summary>
         internal static string No {
             get {
                 return ResourceManager.GetString("No", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Ready.
+        /// </summary>
+        internal static string Ready {
+            get {
+                return ResourceManager.GetString("Ready", resourceCulture);
             }
         }
         
@@ -164,15 +182,6 @@ namespace Updator.Downloader.UI {
         internal static string UpdateDownloaderAsk {
             get {
                 return ResourceManager.GetString("UpdateDownloaderAsk", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Update finished, please restart updator.
-        /// </summary>
-        internal static string UpdateFinishRestartUpdator {
-            get {
-                return ResourceManager.GetString("UpdateFinishRestartUpdator", resourceCulture);
             }
         }
         
