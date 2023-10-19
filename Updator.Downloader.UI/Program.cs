@@ -19,7 +19,7 @@ class Program {
             App.AppLog.LogError(eventArgs.ExceptionObject as Exception, "未捕获异常");
          };
 
-         App.AppLog.LogInformation($"启动器 {Meta.Version}");
+         App.AppLog.LogInformation($"启动器 {Meta.RuntimeString} {Meta.RuntimeVersion}");
 
          var processModule = Process.GetCurrentProcess().MainModule;
          if (processModule != null) {

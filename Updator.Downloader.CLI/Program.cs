@@ -164,7 +164,7 @@ await AnsiConsole.Status()
          using var http = new HttpClient(new SocketsHttpHandler() {
             ConnectTimeout = TimeSpan.FromSeconds(3)
          });
-         if (int.TryParse(await http.GetStringAsync(Path.Combine(downloaderUrl, "build-id")), out var v)) {
+         if (int.TryParse(await http.GetStringAsync(Path.Combine(downloaderUrl, $"{Meta.RuntimeString}-build-id")), out var v)) {
             latestDownloaderVersion = v;
          }
       } catch (Exception ex) {
@@ -173,9 +173,9 @@ await AnsiConsole.Status()
    });
 
 // If there's an update for downloader itself, ask user to make a choice.
-if (latestDownloaderVersion > Meta.Version) {
+if (latestDownloaderVersion > Meta.RuntimeVersion) {
    var updateSelf = AnsiConsole.Prompt(new SelectionPrompt<string>()
-      .Title(string.Format(Strings.UpdateDownloader, Meta.Version, latestDownloaderVersion))
+      .Title(string.Format(Strings.UpdateDownloader, Meta.RuntimeVersion, latestDownloaderVersion))
       .AddChoices(new[] {
          Strings.Yes, Strings.No
       }));

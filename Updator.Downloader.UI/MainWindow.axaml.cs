@@ -1,9 +1,11 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
@@ -26,8 +28,12 @@ namespace Updator.Downloader.UI;
 
 public partial class MainWindow : Window {
    public MainWindow() {
+      InitializeComponent();
+   }
+
+   protected override void OnOpened(EventArgs e) {
+      base.OnOpened(e);
       try {
-         InitializeComponent();
          AppIcon.Loader = new DiskCachedWebImageLoader(Path.Combine(App.AppLocalDataFolder, "cache/image"));
          AppVersion.Content = Strings.LoadingVersion;
          JobName.Content = Strings.Ready;
@@ -70,7 +76,7 @@ public partial class MainWindow : Window {
    }
 
    private void Exec(string cmd) {
-      var escapeList = @"$#&*?;|<>(){}[]`'~!".Append('"');
+      var escapeList = @"$#&*?;|<>(){}[]~!";
       foreach (char escape in escapeList) {
          cmd = cmd.Replace(escape.ToString(), @$"\{escape}");
       }
@@ -124,49 +130,48 @@ public partial class MainWindow : Window {
             using var http = new HttpClient(new SocketsHttpHandler() {
                ConnectTimeout = TimeSpan.FromSeconds(3)
             });
-            if (int.TryParse(await http.GetStringAsync(Path.Combine(downloaderUrl, "build-id")), out var v)) {
+            if (int.TryParse(await http.GetStringAsync(Path.Combine(downloaderUrl, $"{Meta.RuntimeString}-build-id")), out var v)) {
                latestDownloaderVersion = v;
             }
          } catch (Exception ex) {
             Popup.Exception(Strings.RequestFailed, ex);
          }
 
-         App.AppLog.LogInformation($"启动器最新版本 {latestDownloaderVersion} {Meta.Version}");
+         App.AppLog.LogInformation($"启动器最新版本 {latestDownloaderVersion} {Meta.RuntimeVersion}");
 
-         if (latestDownloaderVersion > Meta.Version) {
+         if (latestDownloaderVersion > Meta.RuntimeVersion) {
             App.AppLog.LogInformation($"请求更新");
-            var result = await MessageBoxManager.GetMessageBoxCustom(new MessageBoxCustomParams() {
-                  ContentTitle = Strings.Update,
-                  ContentMessage = string.Format(Strings.UpdateDownloaderAsk, Meta.Version, latestDownloaderVersion),
-                  ButtonDefinitions = new ButtonDefinition[] {
-                     new() {
-                        Name = Strings.Yes
+
+            var result = await Dispatcher.UIThread.Invoke(async () => {
+               return await MessageBoxManager.GetMessageBoxCustom(new MessageBoxCustomParams() {
+                     ContentTitle = Strings.Update,
+                     ContentMessage = string.Format(Strings.UpdateDownloaderAsk, Meta.RuntimeVersion, latestDownloaderVersion),
+                     ButtonDefinitions = new ButtonDefinition[] {
+                        new() {
+                           Name = Strings.Yes
+                        },
+                        new() {
+                           Name = Strings.No
+                        }
                      },
-                     new() {
-                        Name = Strings.No
-                     }
-                  },
-                  FontFamily = App.FontFamily,
-                  WindowStartupLocation = WindowStartupLocation.CenterScreen
-               })
-               .ShowAsync();
+                     FontFamily = App.FontFamily,
+                     WindowStartupLocation = WindowStartupLocation.CenterScreen
+                  })
+                  .ShowAsync();
+            });
 
             if (result == Strings.Yes) {
                App.AppLog.LogInformation($"执行更新");
-               var env = OperatingSystem.IsWindows() ? "win-x64" :
-                  OperatingSystem.IsLinux() ? "linux-x64" :
-                  OperatingSystem.IsMacOS() ? "osx-x64" : null;
-
                SetJobName(Strings.UpdateDownloader);
 
                using var http = new HttpClient(new SocketsHttpHandler() {
                   ConnectTimeout = TimeSpan.FromSeconds(10)
                });
-               var signature = await http.GetByteArrayAsync(Path.Combine(downloaderUrl, $"cli-{env}.sha512"));
+               var signature = await http.GetByteArrayAsync(Path.Combine(downloaderUrl, $"ui-{Meta.RuntimeString}.sha512"));
 
                // Download with progress
                // TODO: Extract this code in a extension.
-               var resp = await http.GetAsync(Path.Combine(downloaderUrl, $"brotli-cli-{env}"),
+               var resp = await http.GetAsync(Path.Combine(downloaderUrl, $"ui-{Meta.RuntimeString}"),
                   HttpCompletionOption.ResponseHeadersRead);
                var len = resp.Content.Headers.ContentLength!.Value;
 
@@ -206,8 +211,13 @@ public partial class MainWindow : Window {
                   var file = $"{name}({latestDownloaderVersion}){ext}";
                   await File.WriteAllBytesAsync(file, payload);
 
-                  if (!OperatingSystem.IsWindows()) {
-                     Exec($"chmod +x {file}");
+                  if (Meta.RuntimeString == "osx") {
+                     ZipFile.ExtractToDirectory(file, $"{file}.app", Encoding.UTF8, true);
+                     Exec($"chmod +x \"{file}.app/Contents/MacOS/Updator.Downloader.UI\"");
+                     File.Delete(file);
+                     file += ".app";
+                  } else if (Meta.RuntimeString == "linux") {
+                     Exec($"chmod +x \"{file}\"");
                   }
 
                   Process.Start(new ProcessStartInfo() {
@@ -499,21 +509,23 @@ public partial class MainWindow : Window {
          });
 
          if (displayUpdateLog && !string.IsNullOrWhiteSpace(desc.updateLogUrl)) {
-            var result = await MessageBoxManager.GetMessageBoxCustom(new MessageBoxCustomParams() {
-                  ContentTitle = Strings.Update,
-                  ContentMessage = Strings.ShowUpdateLog,
-                  ButtonDefinitions = new ButtonDefinition[] {
-                     new() {
-                        Name = Strings.Yes
+            var result = await Dispatcher.UIThread.Invoke(async () => {
+               return await MessageBoxManager.GetMessageBoxCustom(new MessageBoxCustomParams() {
+                     ContentTitle = Strings.Update,
+                     ContentMessage = Strings.ShowUpdateLog,
+                     ButtonDefinitions = new ButtonDefinition[] {
+                        new() {
+                           Name = Strings.Yes
+                        },
+                        new() {
+                           Name = Strings.No
+                        }
                      },
-                     new() {
-                        Name = Strings.No
-                     }
-                  },
-                  FontFamily = App.FontFamily,
-                  WindowStartupLocation = WindowStartupLocation.CenterScreen
-               })
-               .ShowAsync();
+                     FontFamily = App.FontFamily,
+                     WindowStartupLocation = WindowStartupLocation.CenterScreen
+                  })
+                  .ShowAsync();
+            });
 
             if (result == Strings.Yes) {
                Process.Start(new ProcessStartInfo(desc.updateLogUrl) { UseShellExecute = true });
