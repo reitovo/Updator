@@ -1,5 +1,5 @@
 ﻿namespace Updator.Common.Downloader;
 
 public class Meta {
-   public const int Version = 54;
+   public const int Version = 55;
 }

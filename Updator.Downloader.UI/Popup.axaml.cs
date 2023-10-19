@@ -3,6 +3,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
+using Microsoft.Extensions.Logging;
 
 namespace Updator.Downloader.UI;
 
@@ -19,6 +20,7 @@ public partial class Popup : Window {
    }
 
    public static void Exception(string error, Exception ex = null) {
+      App.AppLog.LogError(ex, error);
       Dispatcher.UIThread.Invoke(() => {
          var window = new Popup();
          window.Initialize(Strings.Error, error, ex?.ToString());

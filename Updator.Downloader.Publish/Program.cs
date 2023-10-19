@@ -50,6 +50,11 @@ async Task Publish(string runtime) {
 
 // Publish platforms
 var osList = new string[] { "win-x64", "osx-x64", "linux-x64" };
+
+if (Environment.GetEnvironmentVariable("UPDATOR_WIN_ONLY") != null) {
+   osList = new[] { "win-x64" };
+}
+
 // CANNOT use parallel as it will invalidate builds. Set max degree of parallelism to 1
 await Parallel.ForEachAsync(osList, new ParallelOptions() { MaxDegreeOfParallelism = 1 }, async (os, _) => {
    Console.WriteLine($@"Publish {os}");
@@ -87,6 +92,10 @@ Console.WriteLine(@"Refresh CDN");
 await storage.RefreshRoot();
 
 Console.WriteLine(@"Done Tencent Cos");
+
+if (Environment.GetEnvironmentVariable("UPDATOR_WIN_ONLY") != null) {
+   return;
+}
 
 // Upload to github
 var connection = new Connection(new ProductHeaderValue("Updator-Publish"),

@@ -5,7 +5,7 @@ using Avalonia.Markup.Xaml;
 
 namespace Updator.Downloader.UI;
 
-public partial class App : Application {
+public partial class AppUI : Application {
    public override void Initialize() {
       AvaloniaXamlLoader.Load(this);
    }
