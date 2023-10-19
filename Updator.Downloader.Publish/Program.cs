@@ -56,7 +56,7 @@ async Task PublishWin() {
    var proc = Process.Start(new ProcessStartInfo() {
       FileName = "dotnet",
       Arguments =
-         $"publish -r {runtime}-x64 -c Release --self-contained --framework net7.0 -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:PublishTrimmed=true -p:IncludeAllContentForSelfExtract=true",
+         $"publish -r {runtime}-x64 -c Release --self-contained --framework net7.0",
       WorkingDirectory = projectDir,
       UseShellExecute = false
    })!;
@@ -80,6 +80,14 @@ async Task PublishMac() {
    var runtime = "osx";
    Console.WriteLine($@"Publish {runtime}");
    var proc = Process.Start(new ProcessStartInfo() {
+      FileName = "dotnet",
+      Arguments =
+         $"publish -r {runtime}-x64 -c Release --self-contained --framework net7.0",
+      WorkingDirectory = projectDir,
+      UseShellExecute = false
+   })!;
+   await proc.WaitForExitAsync();
+   proc = Process.Start(new ProcessStartInfo() {
       FileName = "dotnet",
       Arguments =
          $"msbuild -t:BundleApp -p:CFBundleShortVersionString={Meta.MacVersion} -p:Configuration=Release -p:RuntimeIdentifier=osx-x64 -p:SelfContained=true",
