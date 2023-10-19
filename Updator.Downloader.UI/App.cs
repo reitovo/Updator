@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using Avalonia.Media;
 using Microsoft.Extensions.Logging;
+
 namespace Updator.Downloader.UI;
 
 public static class App {
@@ -10,11 +12,23 @@ public static class App {
       Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Reito", "Updator");
 
    static App() {
+      if (OperatingSystem.IsMacOS()) {
+         var pwd = Process.GetCurrentProcess().MainModule?.FileName;
+         if (!string.IsNullOrWhiteSpace(pwd)) {
+            var match = ".app/Contents/MacOS";
+            if (pwd.Contains(match)) {
+               pwd = pwd[..pwd.IndexOf(match, StringComparison.Ordinal)];
+               pwd = pwd[..pwd.LastIndexOf('/')];
+               Environment.CurrentDirectory = pwd;
+            }
+         }
+      } 
+      
       Directory.CreateDirectory(AppLocalDataFolder);
-   }
-
-   public static ILoggerFactory LogFactory { get; } =
-      LoggerFactory.Create(builder => {
+      LogFactory = LoggerFactory.Create(builder => {
+         builder.AddSimpleConsole(o => {
+            o.SingleLine = true;
+         });
          builder.SetMinimumLevel(LogLevel.Trace);
          builder.AddFilter((key, level) => {
             if (key != null) {
@@ -25,12 +39,19 @@ public static class App {
             }
             return true;
          });
-         builder.AddFile("updator.log", levelOverrides: new Dictionary<string, LogLevel>() {
-            { "Microsoft.EntityFrameworkCore", LogLevel.Warning },
-            { "Microsoft.AspNetCore", LogLevel.Warning },
+         builder.AddFile(Path.Combine(AppLocalDataFolder, "updator.log"), levelOverrides: new Dictionary<string, LogLevel>() {
+            {
+               "Microsoft.EntityFrameworkCore", LogLevel.Warning
+            }, {
+               "Microsoft.AspNetCore", LogLevel.Warning
+            },
          }, minimumLevel: LogLevel.Trace, retainedFileCountLimit: 3, fileSizeLimitBytes: 1024 * 1024 * 12);
       });
+      AppLog = LogFactory.CreateLogger("App");
+   }
 
-   public static ILogger AppLog { get; } = LogFactory.CreateLogger("App");
+   private static ILoggerFactory LogFactory { get; }
+
+   public static ILogger AppLog { get; }
    public static FontFamily FontFamily => "PingFang SC, Source Han Sans SC VF, Source Han Sans SC, 等线, 微软雅黑";
 }

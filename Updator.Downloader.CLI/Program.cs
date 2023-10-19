@@ -123,15 +123,7 @@ if (args.Length == 3) {
       await Task.Delay(TimeSpan.FromSeconds(3));
       return;
    }
-}
-
-// Set pwd to current directory 
-var processModule = Process.GetCurrentProcess().MainModule;
-if (processModule != null) {
-   var pwd = Path.GetDirectoryName(processModule.FileName);
-   if (!string.IsNullOrWhiteSpace(pwd))
-      Environment.CurrentDirectory = pwd;
-}
+} 
 
 // Default downloader self-update url.
 var downloaderUrl = "https://github.com/cnSchwarzer/Updator/releases/latest/download";

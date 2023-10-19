@@ -14,20 +14,12 @@ class Program {
    // SynchronizationContext-reliant code before AppMain is called: things aren't initialized
    // yet and stuff might break. 
    public static void Main(string[] args) {
-      try {
+      try {  
          AppDomain.CurrentDomain.UnhandledException += (sender, eventArgs) => {
             App.AppLog.LogError(eventArgs.ExceptionObject as Exception, "未捕获异常");
          };
 
-         App.AppLog.LogInformation($"启动器 {Meta.RuntimeString} {Meta.RuntimeVersion}");
-
-         var processModule = Process.GetCurrentProcess().MainModule;
-         if (processModule != null) {
-            var pwd = Path.GetDirectoryName(processModule.FileName);
-            if (!string.IsNullOrWhiteSpace(pwd))
-               Environment.CurrentDirectory = pwd;
-         }
-
+         App.AppLog.LogInformation($"启动器 {Meta.RuntimeString} {Meta.RuntimeVersion}"); 
          App.AppLog.LogInformation($"工作目录 {Environment.CurrentDirectory}");
 
          var parsed = new Parser(a => {
@@ -40,7 +32,7 @@ class Program {
                if (!string.IsNullOrWhiteSpace(val.DeleteFile)) {
                   Task.Run(async () => {
                      var deleteRetry = 5;
-                  retryDelete:
+                     retryDelete:
                      try {
                         await Task.Delay(TimeSpan.FromSeconds(1));
                         File.Delete(val.DeleteFile);
@@ -60,7 +52,7 @@ class Program {
          App.AppLog.LogInformation($"启动 UI");
 
          BuildAvaloniaApp()
-            .StartWithClassicDesktopLifetime(args);
+           .StartWithClassicDesktopLifetime(args);
       } catch (Exception ex) {
          App.AppLog.LogError(ex, "错误");
       }
@@ -69,8 +61,8 @@ class Program {
    // Avalonia configuration, don't remove; also used by visual designer.
    public static AppBuilder BuildAvaloniaApp()
       => AppBuilder.Configure<AppUI>()
-         .UsePlatformDetect()
-         .LogToTrace();
+        .UsePlatformDetect()
+        .LogToTrace();
 }
 
 file class Options {

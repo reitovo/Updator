@@ -39,16 +39,11 @@ public partial class MainWindow : Window {
          JobName.Content = Strings.Ready;
 
          // Reads sources.json
-         var sourcesPath = "./sources.json";
-         if (!File.Exists(sourcesPath)) {
-            sourcesPath = Path.Combine(Directory.GetParent(Environment.ProcessPath!)!.FullName, "sources.json");
-            if (!File.Exists(sourcesPath)) {
-               Popup.Exception(Strings.SourcesNotFound);
-               return;
-            }
-         }
-
-         App.AppLog.LogInformation($"软件源 {sourcesPath}");
+         var sourcesPath = Path.Combine(Environment.CurrentDirectory, "sources.json");
+         App.AppLog.LogInformation($"源：{sourcesPath}");
+         if (!File.Exists(sourcesPath)) { 
+            Popup.Exception(Strings.SourcesNotFound); 
+         } 
 
          var sources = JsonSerializer.Deserialize(new MemoryStream(File.ReadAllBytes(sourcesPath)),
             SourcesSerializer.Default.Sources);
@@ -57,7 +52,7 @@ public partial class MainWindow : Window {
             return;
          }
 
-         App.AppLog.LogInformation($"{sources.defaultName}");
+         App.AppLog.LogInformation($"默认名称：{sources.defaultName}");
          SetProjectName(sources.defaultName);
          if (!string.IsNullOrWhiteSpace(sources.defaultIcon)) {
             AppIcon.Source = sources.defaultIcon;
@@ -348,9 +343,9 @@ public partial class MainWindow : Window {
          }
 
          SetProjectName(desc.projectName);
+         SetAppIcon(desc.appIconUrl);
          Dispatcher.UIThread.Invoke(() => {
             AppVersion.Content = $"{desc.versionString} ({desc.buildId})";
-            SetAppIcon(desc.appIconUrl);
          });
 
          App.AppLog.LogInformation($"下载软件描述完成");
@@ -378,6 +373,8 @@ public partial class MainWindow : Window {
          var executable = Path.Combine(distRoot, desc.executable);
          var descPath = Path.Combine(distRoot, "__description.json");
 
+         App.AppLog.LogInformation($"写入目录 {distRoot}");
+
          if (!Directory.Exists(distRoot)) {
             Directory.CreateDirectory(distRoot);
          }
@@ -393,7 +390,7 @@ public partial class MainWindow : Window {
          // If there's an old description file, and have update logs
          if (File.Exists(descPath)) {
             try {
-               var oldDesc = await JsonSerializer.DeserializeAsync(new MemoryStream(File.ReadAllBytes(descPath)),
+               var oldDesc = await JsonSerializer.DeserializeAsync(new MemoryStream(await File.ReadAllBytesAsync(descPath)),
                   DistDescriptionSerializer.Default.DistDescription);
 
                // If any of the reinstall build id is larger than current 
@@ -450,7 +447,6 @@ public partial class MainWindow : Window {
                }
             }
 
-            App.AppLog.LogInformation($"检查更新 {f.objectKey} {download}");
             // Download if needed
             if (download) {
                while (true) {
