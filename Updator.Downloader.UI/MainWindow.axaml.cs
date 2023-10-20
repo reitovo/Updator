@@ -48,14 +48,14 @@ public partial class MainWindow : Window {
       }
    }
 
-   private string EscapeCommand(string cmd) { 
+   private string EscapeCommand(string cmd) {
       var escapeList = @"$#&*?;|<>(){}[]~!";
       foreach (char escape in escapeList) {
          cmd = cmd.Replace(escape.ToString(), @$"\{escape}");
       }
       return cmd;
    }
-   
+
    private void Exec(string cmd) {
       App.AppLog.LogTrace($"系统命令 {cmd}");
       using var process = new Process();
@@ -575,7 +575,7 @@ public partial class MainWindow : Window {
                CreateNoWindow = true,
                WindowStyle = ProcessWindowStyle.Hidden,
                FileName = "/bin/bash",
-               WorkingDirectory = distRoot,
+               WorkingDirectory = new DirectoryInfo(executable).Parent!.FullName,
                Arguments = $"-c \"nohup '{executable}' >/dev/null 2>&1 &\""
             });
          } else {

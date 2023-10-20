@@ -55,30 +55,34 @@ await Parallel.ForEachAsync(config.projects, new ParallelOptions() { MaxDegreeOf
    var zip = ZipFile.Create(ms);
 
    zip.BeginUpdate();
-   zip.SetComment("请解压至任意文件夹使用，不要直接在压缩包中打开！");
 
    var name = string.IsNullOrWhiteSpace(project.display) ? project.name : project.display;
-   if (project.platform == "osx") {
-      var temp = Path.GetTempFileName();
-      var dir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString()).Replace("\\", "/");
-      Directory.CreateDirectory(dir);
-      File.WriteAllBytes(temp, bin);
-      System.IO.Compression.ZipFile.ExtractToDirectory(temp, dir, Encoding.UTF8, true);
 
-      var files = Directory.GetFiles(dir, "*.*", SearchOption.AllDirectories);
-      foreach (string file in files) {
-         var relativePath = file.Replace("\\", "/").Replace(dir, string.Empty);
-         var bytes = File.ReadAllBytes(file);
-         var e = new ZipEntry(
-            $"{name}/{name}{config.suffix}.app{relativePath}") {
-            IsUnicodeText = true,
-            HostSystem = 3,
-            ExternalFileAttributes = relativePath.EndsWith("Contents/MacOS/Updator.Downloader.UI") ? 0x81ed << 16 : 0x81a4 << 16,
-            Size = bytes.Length,
-            Crc = BitConverter.ToInt32(Crc32.Hash(bytes))
-         };
-         zip.Add(new MemoryDataSource(bytes), e);
-      }
+   void AddHint(string text) {
+      var textBytes = Encoding.UTF8.GetBytes(text);
+      zip.SetComment(text);
+      var hint = new ZipEntry(
+         $"{name}/提示.txt") {
+         IsUnicodeText = true,
+         HostSystem = 3,
+         ExternalFileAttributes = 0x81a4 << 16,
+         Size = textBytes.Length,
+         Crc = BitConverter.ToInt32(Crc32.Hash(textBytes))
+      };
+      zip.Add(new MemoryDataSource(textBytes), hint);
+   }
+
+   if (project.platform == "osx") {
+      var exe = new ZipEntry(
+         $"{name}/{name}{config.suffix}.zip") {
+         IsUnicodeText = true,
+         HostSystem = 3,
+         ExternalFileAttributes = 0x81a4 << 16,
+         Size = bin.Length,
+         Crc = BitConverter.ToInt32(Crc32.Hash(bin))
+      };
+      zip.Add(new MemoryDataSource(bin), exe);
+      AddHint("请解压后将所有文件移动至任意其他文件夹使用，否则可能会找不到文件！如更新过程出错，请前往 https://reito.fun 重新下载");
    } else {
       var exe = new ZipEntry(
          $"{name}/{name}{config.suffix}{(project.platform == "win" ? ".exe" : string.Empty)}") {
@@ -89,6 +93,7 @@ await Parallel.ForEachAsync(config.projects, new ParallelOptions() { MaxDegreeOf
          Crc = BitConverter.ToInt32(Crc32.Hash(bin))
       };
       zip.Add(new MemoryDataSource(bin), exe);
+      AddHint("请解压至任意文件夹使用，不要直接在压缩包中打开！如更新过程出错，请前往 https://reito.fun 重新下载");
    }
 
    var sources = File.ReadAllBytes(path);
