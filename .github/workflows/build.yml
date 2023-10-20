@@ -162,3 +162,9 @@ jobs:
         with:
           name: osx
           path: "${{ github.workspace }}/output.zip"
+          
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: osx-upload
+          path: "${{ github.workspace }}/build.zip"
