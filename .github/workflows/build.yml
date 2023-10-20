@@ -8,8 +8,6 @@ on:
 jobs:
   build-osx:
     runs-on: macos-latest
-    env:   
-      
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -58,10 +56,10 @@ jobs:
               if [ -f "$fname" ]
               then
                   echo "[INFO] Signing $fname"
-                  codesign --force --timestamp --options=runtime --entitlements "${{ env.ENTITLEMENTS_FILE }}" --sign "${{ secret.DEVELOPER_ID_CERTIFICATE_THUMBNAIL }}" "$fname"
+                  codesign --force --timestamp --options=runtime --entitlements "${{ env.ENTITLEMENTS_FILE }}" --sign "${{ secrets.DEVELOPER_ID_CERTIFICATE_THUMBNAIL }}" "$fname"
               fi
             done
-            codesign --force --timestamp --options=runtime --entitlements "${{ env.ENTITLEMENTS_FILE }}" --sign "${{ secret.DEVELOPER_ID_CERTIFICATE_THUMBNAIL }}" "build.app"    
+            codesign --force --timestamp --options=runtime --entitlements "${{ env.ENTITLEMENTS_FILE }}" --sign "${{ secrets.DEVELOPER_ID_CERTIFICATE_THUMBNAIL }}" "build.app"    
           
       - name: Notarise app
         working-directory: ${{ github.workspace }}
