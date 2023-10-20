@@ -8,37 +8,64 @@ on:
 jobs:
   build-osx:
     runs-on: macos-latest
-    env: 
-      TEAM_ID: XV53H7ABC6
-      SIGNING_IDENTITY: 1
+    env:   
       
     steps:
-      - name: Setup Keychain
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: code
+          
+      - name: .NET  
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '7'
+      
+      - name: Prepare Package
+        working-directory: ${{ github.workspace }}
+        env:
+          ICONS_FILE: ${{ github.workspace }}/code/Updator.Downloader.UI/MacOS/Icon.icns
+          PLIST_FILE: ${{ github.workspace }}/code/Updator.Downloader.UI/MacOS/Info.plist
         run: |
-          security create-keychain -p "${{ secrets.KEYCHAIN_PASSWORD}}" build.keychain
-          security default-keychain -s build.keychain
-          security unlock-keychain -p "${{ secrets.KEYCHAIN_PASSWORD}}" build.keychain
-          echo "${{ secrets.MACOS_CERTIFICATE }}" | base64 --decode > certificate.p12
-          security import certificate.p12 -k build.keychain -P "${{ secrets.MACOS_CERTIFICATE_PWD }}" -T /usr/bin/codesign
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "${{ secrets.KEYCHAIN_PASSWORD }}" build.keychain
-          xcrun notarytool store-credentials "AC_PASSWORD" --apple-id "${{ secrets.APPLE_ID }}" --team-id ${{ secrets.TEAM_ID }} --password "${{ secrets.NOTARY_TOOL_PASSWORD }}"
+          mkdir "build.app"
+          mkdir "build.app/Contents"
+          mkdir "build.app/Contents/MacOS"
+          mkdir "build.app/Contents/Resources"
+          
+          cp "${{ env.PLIST_FILE }}" "build.app/Contents/Info.plist"
+          cp "${{ env.ICONS_FILE }}" "build.app/Contents/Resources/Icon.icns"
           
       - name: Publish
-        run: dotnet publish -c Release -r osx-x64 -o $RUNNER_TEMP/MyApp.app/Contents/MacOS MyApp.csproj
+        run: dotnet publish -c Release -r osx-x64 --self-contained --framework net7.0 -o "${{ github.workspace }}/build.app/Contents/MacOS"
+        working-directory: ${{ github.workspace }}/code/Updator.Downloader.UI
+          
+      - name: Setup Keychain
+        run: |
+          security create-keychain -p "${{ secrets.KEYCHAIN_PASSWORD }}" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "${{ secrets.KEYCHAIN_PASSWORD }}" build.keychain
+          echo "${{ secrets.DEVELOPER_ID_CERTIFICATE }}" | base64 --decode > certificate.p12
+          security import certificate.p12 -k build.keychain -P "${{ secrets.DEVELOPER_ID_CERTIFICATE_PASSWORD }}" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "${{ secrets.KEYCHAIN_PASSWORD }}" build.keychain
+          xcrun notarytool store-credentials "AC_PASSWORD" --apple-id "${{ secrets.APPLE_ID }}" --team-id ${{ secrets.TEAM_ID }} --password "${{ secrets.APP_SPECIFIC_PASSWORD }}"
         
       - name: Codesign app
+        working-directory: ${{ github.workspace }}
+        env:
+          ENTITLEMENTS_FILE: ${{ github.workspace }}/code/Updator.Downloader.UI/MacOS/App.entitlements
         run: |
-            find "$RUNNER_TEMP/MyApp.app/Contents/MacOS/"|while read fname; do
+            find "build.app/Contents/MacOS/"|while read fname; do
               if [ -f "$fname" ]
               then
                   echo "[INFO] Signing $fname"
-                  codesign --force --timestamp --options=runtime --entitlements MyApp.entitlements --sign "${{ env.$SIGNING_IDENTITY }}" "$fname"
+                  codesign --force --timestamp --options=runtime --entitlements "${{ env.ENTITLEMENTS_FILE }}" --sign "${{ secret.DEVELOPER_ID_CERTIFICATE_THUMBNAIL }}" "$fname"
               fi
             done
-            codesign --force --timestamp --options=runtime --entitlements MyApp.entitlements --sign "${{ env.SIGNING_IDENTITY }}" "$RUNNER_TEMP/MyApp.app"    
+            codesign --force --timestamp --options=runtime --entitlements "${{ env.ENTITLEMENTS_FILE }}" --sign "${{ secret.DEVELOPER_ID_CERTIFICATE_THUMBNAIL }}" "build.app"    
           
       - name: Notarise app
+        working-directory: ${{ github.workspace }}
         run: |
-            ditto -c -k --sequesterRsrc --keepParent "$RUNNER_TEMP/MyApp.app" "$RUNNER_TEMP/MyApp.zip"
-            xcrun notarytool submit "$RUNNER_TEMP/MyApp.zip" --wait --keychain-profile "AC_PASSWORD"
-            xcrun stapler staple "$RUNNER_TEMP/MyApp.app"
+            ditto -c -k --sequesterRsrc --keepParent "build.app" "build.zip"
+            xcrun notarytool submit "build.zip" --wait --keychain-profile "AC_PASSWORD"
+            xcrun stapler staple "build.app"
