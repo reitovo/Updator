@@ -11,6 +11,7 @@
         
         <PublishTrimmed>true</PublishTrimmed> 
         <TrimMode>partial</TrimMode>
+        <PublishSingleFile>true</PublishSingleFile>
         <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
         <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
     </PropertyGroup>
