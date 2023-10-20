@@ -5,30 +5,8 @@ on:
     branches: [ "master" ]
   workflow_dispatch:
 
-jobs:
-  build-win-linux:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          path: code
-
-      - name: .NET
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: '7'
-
-      - name: Publish Windows
-        run: dotnet publish -r win-x64 -c Release --self-contained --framework net7.0 -o "${{ github.workspace }}/win"
-        working-directory: ${{ github.workspace }}/code/Updator.Downloader.UI
-
-      - name: Publish Linux
-        run: dotnet publish -r linux-x64 -c Release --self-contained --framework net7.0 -o "${{ github.workspace }}/linux"
-        working-directory: ${{ github.workspace }}/code/Updator.Downloader.UI
-  
-  
-  build-osx:
+jobs: 
+  build:
     runs-on: macos-latest
     steps:
       - name: Checkout
@@ -48,7 +26,7 @@ jobs:
           mkdir "build.app/Contents"
           mkdir "build.app/Contents/MacOS" 
           
-      - name: Publish
+      - name: Publish Mac
         run: dotnet publish -r osx-x64 -c Release --self-contained --framework net7.0 -o "${{ github.workspace }}/build.app/Contents/MacOS"
         working-directory: ${{ github.workspace }}/code/Updator.Downloader.UI
 
@@ -94,3 +72,30 @@ jobs:
             xcrun notarytool submit "build.zip" --wait --keychain-profile "AC_PASSWORD"
             xcrun stapler staple "build.app"
             ls -all
+
+      - name: Publish Windows
+        run: dotnet publish -r win-x64 -c Release --self-contained --framework net7.0 -o "${{ github.workspace }}/win"
+        working-directory: ${{ github.workspace }}/code/Updator.Downloader.UI
+
+      - name: Publish Linux
+        run: dotnet publish -r linux-x64 -c Release --self-contained --framework net7.0 -o "${{ github.workspace }}/linux"
+        working-directory: ${{ github.workspace }}/code/Updator.Downloader.UI
+        
+      - name: Build Publisher
+        run: dotnet build -o "${{ github.workspace }}/publisher"
+        working-directory: ${{ github.workspace }}/code/Updator.Downloader.Publish
+        
+      - name: Upload
+        run: |
+          dotnet Updator.Downloader.Publish.dll --config ${{ secrets.PUBLISHER_CONFIG }} --os win --path "${{ github.workspace }}/win/Updator.Downloader.UI.exe"
+          dotnet Updator.Downloader.Publish.dll --config ${{ secrets.PUBLISHER_CONFIG }} --os linux --path "${{ github.workspace }}/linux/Updator.Downloader.UI"
+          dotnet Updator.Downloader.Publish.dll --config ${{ secrets.PUBLISHER_CONFIG }} --os osx --path "${{ github.workspace }}/build.app"
+        working-directory: ${{ github.workspace }}/publisher
+        
+      - uses: actions/upload-artifact@v3
+        with:
+          name: build
+          path: |
+            "${{ github.workspace }}/linux/Updator.Downloader.UI"
+            "${{ github.workspace }}/win/Updator.Downloader.UI.exe"
+            "${{ github.workspace }}/build.app"

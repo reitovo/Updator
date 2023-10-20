@@ -123,10 +123,10 @@ if (args.Length == 3) {
       await Task.Delay(TimeSpan.FromSeconds(3));
       return;
    }
-} 
+}
 
 // Default downloader self-update url.
-var downloaderUrl = "https://github.com/cnSchwarzer/Updator/releases/latest/download";
+var downloaderUrl = "https://dist.reito.fun/downloader";
 var projectName = string.Empty;
 
 // Reads sources.json

@@ -37,33 +37,10 @@ public partial class MainWindow : Window {
          AppIcon.Loader = new DiskCachedWebImageLoader(Path.Combine(App.AppLocalDataFolder, "cache/image"));
          AppVersion.Content = Strings.LoadingVersion;
          JobName.Content = Strings.Ready;
-
-         // Reads sources.json
-         var sourcesPath = Path.Combine(Environment.CurrentDirectory, "sources.json");
-         App.AppLog.LogInformation($"源：{sourcesPath}");
-         if (!File.Exists(sourcesPath)) {
-            Popup.Exception(Strings.SourcesNotFound);
-         }
-
-         var sources = JsonSerializer.Deserialize(new MemoryStream(File.ReadAllBytes(sourcesPath)),
-            SourcesSerializer.Default.Sources);
-         if (sources == null) {
-            Popup.Exception(Strings.SourcesNotFound);
-            return;
-         }
-
-         App.AppLog.LogInformation($"默认名称：{sources.defaultName}");
-         SetProjectName(sources.defaultName);
-         if (!string.IsNullOrWhiteSpace(sources.defaultIcon)) {
-            AppIcon.Source = sources.defaultIcon;
-         } else {
-            AppIcon.Source = "Icon.ico";
-         }
-
-         App.AppLog.LogInformation($"启动更新");
+         AppName.Content = Strings.Update;
 
          Task.Run(async () => {
-            await InitializeSource(sourcesPath, sources);
+            await InitializeSource();
          });
       } catch (Exception ex) {
          App.AppLog.LogError(ex, "错误");
@@ -109,13 +86,52 @@ public partial class MainWindow : Window {
       });
    }
 
-   public async Task InitializeSource(string sourcesPath, Sources sources) {
+   Source GetSelectedSource(Sources sources) {
+      // Select the unique enabled source
+      var sourceCandidate = sources.sources.Where(a => a.enable).ToList();
+      if (sourceCandidate.Count != 1) {
+         if (string.IsNullOrWhiteSpace(sources.defaultSourceId))
+            return null;
+         return sources.sources.FirstOrDefault(a => a.id == sources.defaultSourceId);
+      }
+      return sourceCandidate.First();
+   }
+
+   void SetProgressBar(double value) {
+      Dispatcher.UIThread.Invoke(() => {
+         JobProgress.Value = value;
+      });
+   }
+
+   void SetJobName(string name) {
+      Dispatcher.UIThread.Invoke(() => {
+         JobName.Content = name;
+      });
+   }
+
+   public async Task InitializeSource() {
       try {
          // Default downloader self-update url.
-         var downloaderUrl = "https://github.com/cnSchwarzer/Updator/releases/latest/download";
+         var downloaderUrl = "https://dist.reito.fun/downloader";
+
+         // Reads sources.json
+         var sourcesPath = Path.Combine(Environment.CurrentDirectory, "sources.json");
+         App.AppLog.LogInformation($"源：{sourcesPath}");
+
+         Sources sources = null;
+         if (File.Exists(sourcesPath)) {
+            sources = JsonSerializer.Deserialize(new MemoryStream(await File.ReadAllBytesAsync(sourcesPath)),
+               SourcesSerializer.Default.Sources);
+            App.AppLog.LogInformation($"默认名称：{sources.defaultName}");
+
+            SetProjectName(sources.defaultName);
+            SetAppIcon(sources.defaultIcon ?? "Icon.ico");
+         }
+
+         App.AppLog.LogInformation($"启动更新");
 
          // If there's custom downloader url, replace it
-         if (!string.IsNullOrWhiteSpace(sources.customDownloaderUrl)) {
+         if (sources != null && !string.IsNullOrWhiteSpace(sources.customDownloaderUrl)) {
             downloaderUrl = sources.customDownloaderUrl;
             App.AppLog.LogInformation($"自定义下载源 {downloaderUrl}");
          }
@@ -152,7 +168,7 @@ public partial class MainWindow : Window {
                      FontFamily = App.FontFamily,
                      WindowStartupLocation = WindowStartupLocation.CenterScreen
                   })
-                 .ShowAsync();
+                  .ShowAsync();
             });
 
             if (result == Strings.Yes) {
@@ -228,27 +244,9 @@ public partial class MainWindow : Window {
             }
          }
 
-         Source GetSelectedSource(Sources srcs) {
-            // Select the unique enabled source
-            var sourceCandidate = srcs.sources.Where(a => a.enable).ToList();
-            if (sourceCandidate.Count != 1) {
-               if (string.IsNullOrWhiteSpace(srcs.defaultSourceId))
-                  return null;
-               return srcs.sources.FirstOrDefault(a => a.id == srcs.defaultSourceId);
-            }
-            return sourceCandidate.First();
-         }
-
-         void SetProgressBar(double value) {
-            Dispatcher.UIThread.Invoke(() => {
-               JobProgress.Value = value;
-            });
-         }
-
-         void SetJobName(string name) {
-            Dispatcher.UIThread.Invoke(() => {
-               JobName.Content = name;
-            });
+         if (sources == null) {
+            Popup.Exception(Strings.SourcesNotFound);
+            return;
          }
 
          // Update sources.json if set.
@@ -537,7 +535,7 @@ public partial class MainWindow : Window {
                      FontFamily = App.FontFamily,
                      WindowStartupLocation = WindowStartupLocation.CenterScreen
                   })
-                 .ShowAsync();
+                  .ShowAsync();
             });
 
             if (result == Strings.Yes) {

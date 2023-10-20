@@ -7,6 +7,7 @@ using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using CommandLine;
 using Octokit;
 using Octokit.Internal;
 using Updator.Common.CompressionProvider;
@@ -17,122 +18,67 @@ using Meta = Updator.Common.Downloader.Meta;
 
 Console.OutputEncoding = Encoding.UTF8;
 
-Environment.SetEnvironmentVariable("UPDATOR_BUILD_LEGACY", "1");
-Environment.SetEnvironmentVariable("UPDATOR_BUILD_WIN", "1");
-Environment.SetEnvironmentVariable("UPDATOR_BUILD_MAC", "1");
-Environment.SetEnvironmentVariable("UPDATOR_BUILD_LINUX", "1");
-Environment.SetEnvironmentVariable("UPDATOR_UPLOAD_GITHUB", "1");
+var parsed = new Parser(a => {
+   a.AllowMultiInstance = true;
+   a.IgnoreUnknownArguments = true;
+}).ParseArguments<Options>(args);
+if (parsed.Value == null) {
+   return -1;
+}
 
-// Get project root from args[0]
-var projectDir = args[0];
-var publishDir = Path.Combine(projectDir, "bin/Publish");
-
-// Remove old builds
-if (Directory.Exists(Path.Combine(projectDir, "bin/Release/net7.0")))
-   Directory.Delete(Path.Combine(projectDir, "bin/Release/net7.0"), true);
-if (Directory.Exists(publishDir))
-   Directory.Delete(publishDir, true);
-Directory.CreateDirectory(publishDir);
+var opt = parsed.Value;
 
 // Read tokens from file provided via args[1]
-var config = await JsonSerializer.DeserializeAsync<Config>(new MemoryStream(File.ReadAllBytes(args[1])));
+var config = await JsonSerializer.DeserializeAsync<Config>(new MemoryStream(Convert.FromBase64String(opt.Config)));
 
 // I use Tencent COS as a distributor
 var storage = new TencentCos(config.cos);
 
-var buildLegacy = Environment.GetEnvironmentVariable("UPDATOR_BUILD_LEGACY") == "1";
-var buildWin = Environment.GetEnvironmentVariable("UPDATOR_BUILD_WIN") == "1";
-var buildMac = Environment.GetEnvironmentVariable("UPDATOR_BUILD_MAC") == "1";
-var buildLinux = Environment.GetEnvironmentVariable("UPDATOR_BUILD_LINUX") == "1";
-var uploadGithub = Environment.GetEnvironmentVariable("UPDATOR_UPLOAD_GITHUB") == "1";
-
 // Local function for publish a runtime
 async Task PublishWin() {
-   if (!buildWin) {
-      return;
-   }
    var runtime = "win";
    Console.WriteLine($@"Publish {runtime}");
-   var proc = Process.Start(new ProcessStartInfo() {
-      FileName = "dotnet",
-      Arguments =
-         $"publish -r {runtime}-x64 -c Release --self-contained --framework net7.0",
-      WorkingDirectory = projectDir,
-      UseShellExecute = false
-   })!;
-   await proc.WaitForExitAsync();
-   var path = Path.Combine(projectDir, $"bin/Release/net7.0/{runtime}-x64/publish/Updator.Downloader.UI.exe");
-   await WritePackage(runtime, path);
+   var path = opt.Path;
+   await UploadPackage(runtime, path);
 
-   if (buildLegacy) {
-      var data = File.ReadAllBytes(Path.Combine(projectDir, $"bin/Release/net7.0/{runtime}-x64/publish/Updator.Downloader.UI.exe"));
+   if (opt.Legacy) {
+      var data = File.ReadAllBytes(path);
       var hash = SHA512.HashData(data);
-      File.WriteAllBytes(Path.Combine(publishDir, $"cli-{runtime}-x64.sha512"), hash);
-      File.WriteAllBytes(Path.Combine(publishDir, $"cli-{runtime}-x64"), data);
-      File.WriteAllBytes(Path.Combine(publishDir, $"brotli-cli-{runtime}-x64"), await CompressBrotli(data));
+      await Upload($"cli-{runtime}-x64.sha512", hash);
+      await Upload($"cli-{runtime}-x64", data);
+      await Upload($"brotli-cli-{runtime}-x64", await CompressBrotli(data));
    }
 }
 
 async Task PublishMac() {
-   if (!buildMac) {
-      return;
-   }
    var runtime = "osx";
    Console.WriteLine($@"Publish {runtime}");
-   var proc = Process.Start(new ProcessStartInfo() {
-      FileName = "dotnet",
-      Arguments =
-         $"publish -r {runtime}-x64 -c Release --self-contained --framework net7.0",
-      WorkingDirectory = projectDir,
-      UseShellExecute = false
-   })!;
-   await proc.WaitForExitAsync();
-   proc = Process.Start(new ProcessStartInfo() {
-      FileName = "dotnet",
-      Arguments =
-         $"msbuild -t:BundleApp -p:CFBundleShortVersionString={Meta.MacVersion} -p:Configuration=Release -p:RuntimeIdentifier=osx-x64 -p:SelfContained=true",
-      WorkingDirectory = projectDir,
-      UseShellExecute = false
-   })!;
-   await proc.WaitForExitAsync();
-   var path = Path.Combine(projectDir, $"bin/Release/net7.0/{runtime}-x64/publish/启动器.app");
-   var pack = Path.Combine(projectDir, $"bin/Release/net7.0/{runtime}-x64/publish/启动器.app.zip");
+   var path = opt.Path;
+   var pack = opt.Path + ".zip";
    ZipFile.CreateFromDirectory(path, pack, CompressionLevel.SmallestSize, false, Encoding.UTF8);
-   await WritePackage(runtime, pack);
+   await UploadPackage(runtime, pack);
 
-   if (buildLegacy) {
-      var data = File.ReadAllBytes(Path.Combine(projectDir, $"bin/Release/net7.0/{runtime}-x64/publish/Updator.Downloader.UI"));
+   if (opt.Legacy) {
+      var data = File.ReadAllBytes($"{path}/Contents/MacOS/Updator.Downloader.UI");
       var hash = SHA512.HashData(data);
-      File.WriteAllBytes(Path.Combine(publishDir, $"cli-{runtime}-x64.sha512"), hash);
-      File.WriteAllBytes(Path.Combine(publishDir, $"cli-{runtime}-x64"), data);
-      File.WriteAllBytes(Path.Combine(publishDir, $"brotli-cli-{runtime}-x64"), await CompressBrotli(data));
+      await Upload($"cli-{runtime}-x64.sha512", hash);
+      await Upload($"cli-{runtime}-x64", data);
+      await Upload($"brotli-cli-{runtime}-x64", await CompressBrotli(data));
    }
 }
 
 async Task PublishLinux() {
-   if (!buildLinux) {
-      return;
-   }
-
    var runtime = "linux";
    Console.WriteLine($@"Publish {runtime}");
-   var proc = Process.Start(new ProcessStartInfo() {
-      FileName = "dotnet",
-      Arguments =
-         $"publish -r {runtime}-x64 -c Release --self-contained --framework net7.0",
-      WorkingDirectory = projectDir,
-      UseShellExecute = false
-   })!;
-   await proc.WaitForExitAsync();
-   var path = Path.Combine(projectDir, $"bin/Release/net7.0/{runtime}-x64/publish/Updator.Downloader.UI");
-   await WritePackage(runtime, path);
+   var path = opt.Path;
+   await UploadPackage(runtime, path);
 
-   if (buildLegacy) {
-      var data = File.ReadAllBytes(Path.Combine(projectDir, $"bin/Release/net7.0/{runtime}-x64/publish/Updator.Downloader.UI"));
+   if (opt.Legacy) {
+      var data = File.ReadAllBytes(path);
       var hash = SHA512.HashData(data);
-      File.WriteAllBytes(Path.Combine(publishDir, $"cli-{runtime}-x64.sha512"), hash);
-      File.WriteAllBytes(Path.Combine(publishDir, $"cli-{runtime}-x64"), data);
-      File.WriteAllBytes(Path.Combine(publishDir, $"brotli-cli-{runtime}-x64"), await CompressBrotli(data));
+      await Upload($"cli-{runtime}-x64.sha512", hash);
+      await Upload($"cli-{runtime}-x64", data);
+      await Upload($"brotli-cli-{runtime}-x64", await CompressBrotli(data));
    }
 }
 
@@ -145,82 +91,50 @@ async Task<byte[]> CompressBrotli(byte[] data) {
    return compressed.ToArray();
 }
 
-async Task WritePackage(string os, string outputFile) {
-   var hash = SHA512.HashData(File.ReadAllBytes(outputFile));
-   File.WriteAllBytes(Path.Combine(publishDir, $"ui-{os}.sha512"), hash);
-
-   using var decompressed = new MemoryStream(File.ReadAllBytes(outputFile));
-   using var compressed = new MemoryStream();
-   var brotli = new Brotli();
-   await brotli.Compress(decompressed, compressed);
-   compressed.Position = 0;
-   File.WriteAllBytes(Path.Combine(publishDir, $"ui-{os}"), compressed.ToArray());
-   File.WriteAllText(Path.Combine(publishDir, $"{os}-build-id"), Meta.VersionByRuntime[os].ToString());
+async Task UploadPackage(string os, string outputFile) {
+   var data = File.ReadAllBytes(outputFile);
+   var hash = SHA512.HashData(data);
+   await Upload($"ui-{os}.sha512", hash);
+   await Upload($"ui-{os}", await CompressBrotli(data));
+   await Upload($"{os}-build-id", Encoding.UTF8.GetBytes(Meta.VersionByRuntime[os].ToString()));
 }
 
-await PublishWin();
-await PublishMac();
-await PublishLinux();
+switch (opt.Os) {
+   case "win":
+      await PublishWin();
+      break;
+   case "osx":
+      await PublishMac();
+      break;
+   case "linux":
+      await PublishLinux();
+      break;
+}
 
 // Write version file (legacy)
-if (buildLegacy) {
-   File.WriteAllText(Path.Combine(publishDir, $"build-id"), Meta.WinVersion.ToString());
+if (opt.Legacy) {
+   await Upload("build-id", Encoding.UTF8.GetBytes(Meta.WinVersion.ToString()));
 }
-Console.WriteLine(@"Done Generate");
 
-// Upload to tencent cos
-Console.WriteLine(@"Upload Tencent Cos");
-ConcurrentBag<string> keys = new();
-await Parallel.ForEachAsync(new DirectoryInfo(publishDir).GetFiles(), async (f, _) => {
-   Console.WriteLine($@"Upload Tencent Cos {f.Name}");
-   await using var fs = f.OpenRead();
-   await storage.UploadAsync(f.Name, fs);
-   keys.Add(f.Name);
-});
+async Task Upload(string name, byte[] data) {
+   Console.WriteLine($@"Upload Tencent Cos {name}");
+   await using var ms = new MemoryStream(data);
+   await storage.UploadAsync(name, ms);
+}
 
 Console.WriteLine(@"Refresh CDN");
 await storage.RefreshRoot();
 
 Console.WriteLine(@"Done Tencent Cos");
+return 0;
 
-// Upload to github
-if (uploadGithub) {
-   var connection = new Connection(new ProductHeaderValue("Updator-Publish"),
-      new HttpClientAdapter(() => HttpMessageHandlerFactory.CreateDefault(new WebProxy() /*HttpClient.DefaultProxy*/)));
-   var client = new GitHubClient(connection) {
-      Credentials = new Credentials(config.githubToken)
-   };
-
-   var tag = $"build-{DateTime.Now:yyyy-MM-dd}";
-   var repo = await client.Repository.Get("cnSchwarzer", "Updator");
-   try {
-      Console.WriteLine($@"Delete Github Release {tag}");
-      var rel = await client.Repository.Release.Get(repo.Id, tag);
-      await client.Repository.Release.Delete(repo.Id, rel.Id);
-   } catch (Exception) {
-      // ignored
-   }
-
-   // Create github release
-   Console.WriteLine($@"Create Github Release {tag}");
-   var body = $"""
-               # Updator Downloader Release
-               Date: {DateTime.Now}
-               This release is generated by tool!
-               You should download this downloader from software which uses this updater framework, as it won't work without `sources.json` provided by each software distributor.
-               """;
-   var release = await client.Repository.Release.Create(repo.Id, new NewRelease(tag) {
-      Body = body,
-      Name = tag
-   });
-
-   // Upload assets
-   await Parallel.ForEachAsync(new DirectoryInfo(publishDir).GetFiles(), async (f, _) => {
-      Console.WriteLine($@"Upload Github {f.Name}");
-      await using var fs = f.OpenRead();
-      await client.Repository.Release.UploadAsset(release,
-         new ReleaseAssetUpload(f.Name, "application/octet-stream", fs, null));
-   });
-
-   Console.WriteLine(@"Done Upload Github");
+file class Options {
+   [Option("os", Required = false)]
+   public string Os { get; set; }
+   [Option("path", Required = false)]
+   public string Path { get; set; }
+   [Option("config", Required = false)]
+   public string Config { get; set; }
+   [Option("legacy", Required = false)]
+   public bool Legacy { get; set; }
 }
