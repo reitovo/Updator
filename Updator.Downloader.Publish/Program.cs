@@ -54,12 +54,10 @@ async Task PublishMac() {
    var runtime = "osx";
    Console.WriteLine($@"Publish {runtime}");
    var path = opt.Path;
-   var pack = opt.Path + ".zip";
-   ZipFile.CreateFromDirectory(path, pack, CompressionLevel.SmallestSize, false, Encoding.UTF8);
-   await UploadPackage(runtime, pack);
+   await UploadPackage(runtime, path);
 
    if (opt.Legacy) {
-      var data = File.ReadAllBytes($"{path}/Contents/MacOS/Updator.Downloader.UI");
+      var data = File.ReadAllBytes($"{Path.ChangeExtension(path, "app")}/Contents/MacOS/Updator.Downloader.UI");
       var hash = SHA512.HashData(data);
       await Upload($"cli-{runtime}-x64.sha512", hash);
       await Upload($"cli-{runtime}-x64", data);
