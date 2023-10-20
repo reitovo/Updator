@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: true
   
 jobs: 
-  build-win-linux:
+  build-win:
     runs-on: windows-latest
     steps:
       - name: Checkout
@@ -27,6 +27,34 @@ jobs:
         run: dotnet publish -r win-x64 -c Release --self-contained --framework net7.0 -o "${{ github.workspace }}/win"
         working-directory: ${{ github.workspace }}/code/Updator.Downloader.UI
 
+      - name: Build Publisher
+        run: dotnet build -o "${{ github.workspace }}/publisher"
+        working-directory: ${{ github.workspace }}/code/Updator.Downloader.Publish
+
+      - name: Upload
+        run: |
+          dotnet Updator.Downloader.Publish.dll --config ${{ secrets.PUBLISHER_CONFIG }} --os win --path "${{ github.workspace }}/win/Updator.Downloader.UI.exe"
+        working-directory: ${{ github.workspace }}/publisher 
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: win
+          path: "${{ github.workspace }}/win/Updator.Downloader.UI.exe"
+          
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: code
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '7' 
+
       - name: Publish Linux
         run: dotnet publish -r linux-x64 -c Release --self-contained --framework net7.0 -o "${{ github.workspace }}/linux"
         working-directory: ${{ github.workspace }}/code/Updator.Downloader.UI
@@ -36,17 +64,10 @@ jobs:
         working-directory: ${{ github.workspace }}/code/Updator.Downloader.Publish
 
       - name: Upload
-        run: |
-          dotnet Updator.Downloader.Publish.dll --config ${{ secrets.PUBLISHER_CONFIG }} --os win --path "${{ github.workspace }}/win/Updator.Downloader.UI.exe"
+        run: | 
           dotnet Updator.Downloader.Publish.dll --config ${{ secrets.PUBLISHER_CONFIG }} --os linux --path "${{ github.workspace }}/linux/Updator.Downloader.UI"
         working-directory: ${{ github.workspace }}/publisher 
 
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: win
-          path: "${{ github.workspace }}/win/Updator.Downloader.UI.exe"
-          
       - name: Upload Artifacts
         uses: actions/upload-artifact@v3
         with:
