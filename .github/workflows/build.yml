@@ -14,7 +14,7 @@ jobs:
         with:
           path: code
           
-      - name: .NET  
+      - name: Setup .NET  
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '7' 
@@ -51,7 +51,7 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "${{ secrets.KEYCHAIN_PASSWORD }}" build.keychain
           xcrun notarytool store-credentials "AC_PASSWORD" --apple-id "${{ secrets.APPLE_ID }}" --team-id ${{ secrets.TEAM_ID }} --password "${{ secrets.APP_SPECIFIC_PASSWORD }}"
         
-      - name: Codesign app
+      - name: Codesign App
         working-directory: ${{ github.workspace }}
         env:
           ENTITLEMENTS_FILE: ${{ github.workspace }}/code/Updator.Downloader.UI/MacOS/App.entitlements
@@ -65,13 +65,12 @@ jobs:
             done
             codesign --force --timestamp --options=runtime --entitlements "${{ env.ENTITLEMENTS_FILE }}" --sign "${{ secrets.DEVELOPER_ID_CERTIFICATE_THUMBNAIL }}" "build.app"    
           
-      - name: Notarise app
+      - name: Notarise App
         working-directory: ${{ github.workspace }}
         run: |
             ditto -c -k --sequesterRsrc --keepParent "build.app" "build.zip"
             xcrun notarytool submit "build.zip" --wait --keychain-profile "AC_PASSWORD"
             xcrun stapler staple "build.app"
-            ls -all
 
       - name: Publish Windows
         run: dotnet publish -r win-x64 -c Release --self-contained --framework net7.0 -o "${{ github.workspace }}/win"
@@ -91,11 +90,18 @@ jobs:
           dotnet Updator.Downloader.Publish.dll --config ${{ secrets.PUBLISHER_CONFIG }} --os linux --path "${{ github.workspace }}/linux/Updator.Downloader.UI"
           dotnet Updator.Downloader.Publish.dll --config ${{ secrets.PUBLISHER_CONFIG }} --os osx --path "${{ github.workspace }}/build.app"
         working-directory: ${{ github.workspace }}/publisher
-        
-      - uses: actions/upload-artifact@v3
+      
+      - name: Zip Artifacts
+        working-directory: ${{ github.workspace }}
+        run: |
+          mkdir "artifacts"
+          cp "${{ github.workspace }}/linux/Updator.Downloader.UI" "artifacts/linux/"
+          cp "${{ github.workspace }}/win/Updator.Downloader.UI.exe" "artifacts/win/"
+          cp -r "${{ github.workspace }}/build.app" "artifacts/osx/"
+          zip -r artifacts.zip artifacts
+          
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v3
         with:
           name: build
-          path: |
-            "${{ github.workspace }}/linux/Updator.Downloader.UI"
-            "${{ github.workspace }}/win/Updator.Downloader.UI.exe"
-            "${{ github.workspace }}/build.app"
+          path: artifacts.zip
