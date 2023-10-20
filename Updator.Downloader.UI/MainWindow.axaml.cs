@@ -282,6 +282,7 @@ public partial class MainWindow : Window {
                      Exec($"ditto -x -k '{file}' .");
                      Exec($"mv 'build.app' '{app}'");
                      Exec($"open '{app}' --args {deleteParam}");
+                     Exec($"rm -f '{file}'");
                   } else if (OperatingSystem.IsLinux()) {
                      var name = Path.GetFileNameWithoutExtension(Environment.ProcessPath)!;
                      name = Regex.Replace(name, @"\(\d+\)", string.Empty);
