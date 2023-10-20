@@ -12,6 +12,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using AsyncImageLoader.Loaders;
 using Avalonia.Controls;
+using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Microsoft.Extensions.Logging;
 using MsBox.Avalonia;
@@ -130,9 +131,41 @@ public partial class MainWindow : Window {
          // Default downloader self-update url.
          var downloaderUrl = "https://dist.reito.fun/downloader";
 
+         if (OperatingSystem.IsMacOS()) {
+            var pwd = Process.GetCurrentProcess().MainModule?.FileName;
+            if (!string.IsNullOrWhiteSpace(pwd)) {
+               var match = ".app/Contents/MacOS";
+               if (pwd.Contains(match)) {
+                  pwd = pwd[..pwd.IndexOf(match, StringComparison.Ordinal)];
+
+                  var appName = pwd[(pwd.LastIndexOf('/') + 1)..];
+                  Environment.SetEnvironmentVariable("UPDATOR_MACOS_APPNAME", appName);
+
+                  pwd = pwd[..pwd.LastIndexOf('/')];
+                  Environment.CurrentDirectory = pwd;
+                  App.AppLog.LogInformation($"改变工作目录 {Environment.CurrentDirectory} {appName}");
+
+               }
+            }
+         }
          // Reads sources.json
          var sourcesPath = Path.Combine(Environment.CurrentDirectory, "sources.json");
+         if (!File.Exists(sourcesPath)) {
+            var openFileDialog = await Dispatcher.UIThread.Invoke(async () => await StorageProvider.OpenFilePickerAsync(
+               new FilePickerOpenOptions() {
+                  FileTypeFilter = new[] { new FilePickerFileType("sources.json") { Patterns = new[] { "sources.json" } } },
+                  Title = Strings.OpenSourcesFile
+               }
+            ));
+            var first = openFileDialog.FirstOrDefault();
+            if (first != null) {
+               sourcesPath = first.Path.LocalPath;
+               Environment.CurrentDirectory = Path.GetDirectoryName(sourcesPath)!;
+            }
+         }
+
          App.AppLog.LogInformation($"源：{sourcesPath}");
+         App.AppLog.LogInformation($"工作目录 {Environment.CurrentDirectory}");
 
          Sources sources = null;
          if (File.Exists(sourcesPath)) {
@@ -233,15 +266,19 @@ public partial class MainWindow : Window {
 
                   if (OperatingSystem.IsMacOS()) {
                      var name = Environment.GetEnvironmentVariable("UPDATOR_MACOS_APPNAME");
-                     var deleteParam = name == null ? string.Empty : $"--args --delete {Path.Combine(Environment.CurrentDirectory, $"{name}.app")}";
+                     var old = Path.Combine(Environment.CurrentDirectory, $"{name}.app");
+                     var deleteParam = (name == null || !Directory.Exists(old)) ? string.Empty : $"--delete {old}";
+
                      name ??= "启动器";
                      var file = $"{name}({latestDownloaderVersion}).zip";
                      var app = $"{name}({latestDownloaderVersion}).app";
                      await File.WriteAllBytesAsync(file, payload);
+
+                     App.AppLog.LogInformation($"MacOS 更新 {app} {deleteParam}");
                      Exec($"rm -rf \"build.app\"");
                      Exec($"ditto -x -k \"{file}\" .");
                      Exec($"mv \"build.app\" \"{app}\"");
-                     Exec($"open \"{app}\" {deleteParam}");
+                     Exec($"open \"{app}\" --args {deleteParam}");
                   } else if (OperatingSystem.IsLinux()) {
                      var name = Path.GetFileNameWithoutExtension(Environment.ProcessPath)!;
                      name = Regex.Replace(name, @"\(\d+\)", string.Empty);

@@ -105,6 +105,15 @@ namespace Updator.Downloader.UI {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to sources.json not found, please manually open it..
+        /// </summary>
+        internal static string OpenSourcesFile {
+            get {
+                return ResourceManager.GetString("OpenSourcesFile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Ready.
         /// </summary>
         internal static string Ready {

@@ -66,4 +66,7 @@
     <data name="Ready" xml:space="preserve">
         <value>Ready</value>
     </data>
+    <data name="OpenSourcesFile" xml:space="preserve">
+        <value>sources.json not found, please manually open it.</value>
+    </data>
 </root>

@@ -59,4 +59,7 @@
     <data name="Ready" xml:space="preserve">
         <value>就绪</value>
     </data>
+    <data name="OpenSourcesFile" xml:space="preserve">
+        <value>源文件 sources.json 未找到，请手动选择该文件</value>
+    </data>
 </root>
