@@ -158,6 +158,6 @@ class MemoryDataSource : IStaticDataSource {
 file class Options {
    [Option("cos", Required = false)]
    public string Cos { get; set; }
-   [Option("birthRoot", Required = false)]
+   [Option("path", Required = false)]
    public string BirthRoot { get; set; }
 }
