@@ -45,7 +45,7 @@ jobs:
           
           
   build-linux:
-    runs-on: ubuntu-latest
+    runs-on: ['self-hosted', 'windows']
     if: ${{ !contains(github.event.head_commit.message, 'no-linux') && !contains(github.event.head_commit.message, 'no-run') }}
     steps:
       - name: Checkout
@@ -162,3 +162,6 @@ jobs:
         with:
           name: osx
           path: "${{ github.workspace }}/${{ env.APP_PACKAGE_ZIP }}"
+          
+      - name: Restore Keystore
+        run: security default-keychain -s login.keychain
