@@ -17,11 +17,11 @@ using Meta = Updator.Common.Downloader.Meta;
 
 Console.OutputEncoding = Encoding.UTF8;
 
-Environment.SetEnvironmentVariable("UPDATOR_BUILD_LEGACY", "0");
-Environment.SetEnvironmentVariable("UPDATOR_BUILD_WIN", "0");
+Environment.SetEnvironmentVariable("UPDATOR_BUILD_LEGACY", "1");
+Environment.SetEnvironmentVariable("UPDATOR_BUILD_WIN", "1");
 Environment.SetEnvironmentVariable("UPDATOR_BUILD_MAC", "1");
-Environment.SetEnvironmentVariable("UPDATOR_BUILD_LINUX", "0");
-Environment.SetEnvironmentVariable("UPDATOR_UPLOAD_GITHUB", "0");
+Environment.SetEnvironmentVariable("UPDATOR_BUILD_LINUX", "1");
+Environment.SetEnvironmentVariable("UPDATOR_UPLOAD_GITHUB", "1");
 
 // Get project root from args[0]
 var projectDir = args[0];
@@ -164,7 +164,7 @@ await PublishLinux();
 
 // Write version file (legacy)
 if (buildLegacy) {
-   File.WriteAllText(Path.Combine(publishDir, $"build-id"), "57");
+   File.WriteAllText(Path.Combine(publishDir, $"build-id"), Meta.WinVersion.ToString());
 }
 Console.WriteLine(@"Done Generate");
 
