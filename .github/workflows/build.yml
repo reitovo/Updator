@@ -23,22 +23,26 @@ jobs:
         run: dotnet --info
       
       - name: Prepare Package
+        working-directory: ${{ github.workspace }} 
+        run: |
+          mkdir "build.app"
+          mkdir "build.app/Contents"
+          mkdir "build.app/Contents/MacOS" 
+          
+      - name: Publish
+        run: dotnet publish -r osx-x64 -c Release --self-contained --framework net7.0 -o "${{ github.workspace }}/build.app/Contents/MacOS"
+        working-directory: ${{ github.workspace }}/code/Updator.Downloader.UI
+
+      - name: Post Process Package
         working-directory: ${{ github.workspace }}
         env:
           ICONS_FILE: ${{ github.workspace }}/code/Updator.Downloader.UI/MacOS/Icon.icns
           PLIST_FILE: ${{ github.workspace }}/code/Updator.Downloader.UI/MacOS/Info.plist
         run: |
-          mkdir "build.app"
-          mkdir "build.app/Contents"
-          mkdir "build.app/Contents/MacOS"
           mkdir "build.app/Contents/Resources"
           
           cp "${{ env.PLIST_FILE }}" "build.app/Contents/Info.plist"
           cp "${{ env.ICONS_FILE }}" "build.app/Contents/Resources/Icon.icns"
-          
-      - name: Publish
-        run: dotnet publish -r osx-x64 -c Release --self-contained --framework net7.0
-        working-directory: ${{ github.workspace }}/code/Updator.Downloader.UI
           
       - name: Setup Keychain
         run: |
