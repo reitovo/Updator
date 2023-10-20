@@ -168,3 +168,4 @@ jobs:
         if: always()
         run: |
           security default-keychain -s login.keychain 
+          security delete-keychain build.keychain
