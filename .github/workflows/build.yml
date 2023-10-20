@@ -98,6 +98,7 @@ jobs:
       - name: Prepare Package
         working-directory: ${{ github.workspace }} 
         run: |
+          rm -rf "${{ env.APP_PACKAGE_NAME }}"
           mkdir "${{ env.APP_PACKAGE_NAME }}"
           mkdir "${{ env.APP_PACKAGE_NAME }}/Contents"
           mkdir "${{ env.APP_PACKAGE_NAME }}/Contents/MacOS" 
@@ -166,5 +167,4 @@ jobs:
       - name: Restore
         if: always()
         run: |
-          security default-keychain -s login.keychain
-          rm -rf ${{ github.workspace }}
+          security default-keychain -s login.keychain 
