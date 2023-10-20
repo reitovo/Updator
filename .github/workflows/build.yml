@@ -19,6 +19,9 @@ jobs:
         with:
           dotnet-version: '7'
       
+      - name: .NET Environment
+        run: dotnet --info
+      
       - name: Prepare Package
         working-directory: ${{ github.workspace }}
         env:

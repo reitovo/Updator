@@ -12,6 +12,7 @@
         <PublishTrimmed>true</PublishTrimmed> 
         <TrimMode>partial</TrimMode>
         <PublishSingleFile>true</PublishSingleFile>
+        <UseAppHost>true</UseAppHost>
         <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
         <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
         <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
