@@ -169,3 +169,26 @@ jobs:
         run: |
           security default-keychain -s login.keychain 
           security delete-keychain build.keychain
+          
+  build-birth:
+    needs: [ build-win, build-osx, build-linux ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: code
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '7' 
+
+      - name: Build Birth
+        run: dotnet build -o "${{ github.workspace }}/birth"
+        working-directory: ${{ github.workspace }}/code/Updator.Birth
+
+      - name: Upload
+        run: |
+          dotnet Updator.Birth.dll --cos ${{ secrets.COS_CONFIG }} --path "${{ github.workspace }}/code/Updator.Birth/birth"
+        working-directory: ${{ github.workspace }}/birth 

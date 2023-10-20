@@ -8,6 +8,7 @@ using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using CommandLine;
 using ICSharpCode.SharpZipLib.Checksum;
 using ICSharpCode.SharpZipLib.Zip;
 using Updator.Birth;
@@ -20,14 +21,29 @@ using ZipFile = ICSharpCode.SharpZipLib.Zip.ZipFile;
 
 Console.OutputEncoding = Encoding.UTF8;
 
+var parsed = new Parser(a => {
+   a.AllowMultiInstance = true;
+   a.IgnoreUnknownArguments = true;
+}).ParseArguments<Options>(args);
+if (parsed.Value == null) {
+   return -1;
+}
+var opt = parsed.Value;
+
 // Get projects root from args[0]
-var birthDir = args[0];
-var config =
-   await JsonSerializer.DeserializeAsync<BirthConfig>(
-      new MemoryStream(File.ReadAllBytes(Path.Combine(birthDir, "config.json"))));
+var birthDir = opt.BirthRoot;
+
+var config = await JsonSerializer.DeserializeAsync<BirthConfig>(
+   new MemoryStream(File.ReadAllBytes(Path.Combine(birthDir, "birth.json"))));
+
+if (string.IsNullOrWhiteSpace(opt.Cos)) {
+   return -1;
+}
 
 // I use Tencent COS as a distributor
-var storage = new TencentCos(config.cos);
+var cosConfig = await JsonSerializer.DeserializeAsync<TencentCosConfig>(
+   new MemoryStream(Convert.FromBase64String(opt.Cos)));
+var storage = new TencentCos(cosConfig);
 
 async Task<byte[]> DecompressBrotli(byte[] data) {
    using var decompressed = new MemoryStream();
@@ -38,7 +54,6 @@ async Task<byte[]> DecompressBrotli(byte[] data) {
    return decompressed.ToArray();
 }
 
-ConcurrentBag<string> keys = new();
 await Parallel.ForEachAsync(config.projects, new ParallelOptions() { MaxDegreeOfParallelism = 4 }, async (project, _) => {
    Console.WriteLine($@"Publish {project.name}");
    var path = Path.Combine(birthDir, project.name, "sources.json");
@@ -48,7 +63,7 @@ await Parallel.ForEachAsync(config.projects, new ParallelOptions() { MaxDegreeOf
    }
 
    using var http = new HttpClient();
-   var bin = await http.GetByteArrayAsync($"https://direct.dist.reito.fun/downloader/ui-{project.platform}");
+   var bin = await http.GetByteArrayAsync($"https://dist-1304010062.cos.accelerate.myqcloud.com/downloader/ui-{project.platform}");
    bin = await DecompressBrotli(bin);
 
    using var ms = new MemoryStream();
@@ -115,15 +130,17 @@ await Parallel.ForEachAsync(config.projects, new ParallelOptions() { MaxDegreeOf
    File.WriteAllBytes(Path.Combine(birthDir, project.name, $"{project.name}.zip"), z);
 
    Console.WriteLine($@"Upload Tencent Cos {project.name}");
-   await storage.UploadAsync($"{project.name}.zip", ms);
-   keys.Add($"{project.name}.zip");
+   await storage.UploadAsync($"birth/{project.name}.zip", ms);
 
+   using var sourceMs = new MemoryStream(sources);
+   await storage.UploadAsync($"{project.sourceKeyPrefix}/sources.json", sourceMs);
 });
 
 Console.WriteLine(@"Refresh CDN");
-await storage.RefreshObjectKeys(keys);
+await storage.RefreshRoot();
 
 Console.WriteLine(@"Done Tencent Cos");
+return 0;
 
 class MemoryDataSource : IStaticDataSource {
    private readonly MemoryStream _ms;
@@ -135,4 +152,12 @@ class MemoryDataSource : IStaticDataSource {
    public Stream GetSource() {
       return _ms;
    }
+}
+
+
+file class Options {
+   [Option("cos", Required = false)]
+   public string Cos { get; set; }
+   [Option("birthRoot", Required = false)]
+   public string BirthRoot { get; set; }
 }

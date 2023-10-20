@@ -1,0 +1,14 @@
+{
+    "version": 6, 
+    "sourcesUrl": "https://dist.reito.fun/bliveassist/sources.json",
+    "customDownloaderUrl": "https://dist.reito.fun/downloader",
+    "defaultName": "弹幕姬",
+    "defaultSourceId": "release",
+    "sources": [
+        {
+            "enable": true,
+            "id": "release",
+            "distributionUrl": "https://dist.reito.fun/bliveassist/release"
+        }
+    ]
+}

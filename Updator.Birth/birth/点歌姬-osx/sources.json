@@ -1,0 +1,15 @@
+{
+  "version": 5,
+  "sourcesUrl": "https://dist.reito.fun/songchan/osx/sources.json",
+  "customDownloaderUrl": "https://dist.reito.fun/downloader",
+  "defaultSourceId": "action",
+  "defaultName": "点歌姬",
+  "defaultIcon": "https://dist.reito.fun/songchan/icon.png",
+  "sources": [
+    {
+      "enable": true,
+      "id": "action",
+      "distributionUrl": "https://dist.reito.fun/songchan/osx/action"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "version": 4,
+  "sourcesUrl": "https://dist.reito.fun/blive-face-relay/osx/sources.json",
+  "customDownloaderUrl": "https://dist.reito.fun/downloader",
+  "defaultName": "弹幕姬面捕连接助手",
+  "defaultSourceId": "action",
+  "sources": [
+    {
+      "enable": true,
+      "id": "action",
+      "distributionUrl": "https://dist.reito.fun/blive-face-relay/osx/action"
+    }
+  ]
+}
