@@ -164,6 +164,7 @@ jobs:
           path: "${{ github.workspace }}/${{ env.APP_PACKAGE_ZIP }}"
           
       - name: Restore
+        if: always()
         run: |
           security default-keychain -s login.keychain
           rm -rf ${{ github.workspace }}
