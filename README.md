@@ -12,6 +12,7 @@
 
 此外：
 - `Updator.Downloader.Publish` 用来分发 `Updator.Downloader.*`，因为启动器支持自我更新。
+- `Updator.Birth` 是一个分发包维持最新版的样例工程
 
 使用 .NET 7 进行开发
 
