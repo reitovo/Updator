@@ -34,7 +34,7 @@ jobs:
           cp "${{ env.ICONS_FILE }}" "build.app/Contents/Resources/Icon.icns"
           
       - name: Publish
-        run: dotnet publish -c Release -r osx-x64 --self-contained --framework net7.0 -o "${{ github.workspace }}/build.app/Contents/MacOS"
+        run: dotnet publish -r osx-x64 -c Release --self-contained --framework net7.0 -o "${{ github.workspace }}/build.app/Contents/MacOS"
         working-directory: ${{ github.workspace }}/code/Updator.Downloader.UI
           
       - name: Setup Keychain

@@ -7,13 +7,11 @@
     <key>CFBundleDisplayName</key>
     <string>启动器</string>
     <key>CFBundleIdentifier</key>
-    <string>fun.reito.Updator.Downloader.UI</string>
+    <string>fun.reito.Updator</string>
     <key>CFBundleVersion</key>
     <string>1.0.0</string>
     <key>CFBundlePackageType</key>
-    <string>APPL</string>
-    <key>CFBundleSignature</key>
-    <string>????</string>
+    <string>APPL</string> 
     <key>CFBundleExecutable</key>
     <string>Updator.Downloader.UI</string>
     <key>CFBundleIconFile</key>
@@ -23,6 +21,6 @@
     <key>NSPrincipalClass</key>
     <string>NSApplication</string>
     <key>NSHighResolutionCapable</key>
-    <true />
+    <true/>
   </dict>
 </plist>
