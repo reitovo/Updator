@@ -11,7 +11,7 @@ concurrency:
   
 jobs: 
   build-win:
-    runs-on: ['self-hosted', 'windows']
+    runs-on: windows-latest
     if: ${{ !contains(github.event.head_commit.message, 'no-win') && !contains(github.event.head_commit.message, 'no-run') }}
     steps:
       - name: Checkout
@@ -45,7 +45,7 @@ jobs:
           
           
   build-linux:
-    runs-on: ['self-hosted', 'windows']
+    runs-on: ubuntu-latest
     if: ${{ !contains(github.event.head_commit.message, 'no-linux') && !contains(github.event.head_commit.message, 'no-run') }}
     steps:
       - name: Checkout
@@ -79,7 +79,7 @@ jobs:
           
 
   build-osx:
-    runs-on: macos-13
+    runs-on: macos-latest
     if: ${{ !contains(github.event.head_commit.message, 'no-osx') && !contains(github.event.head_commit.message, 'no-run') }}
     env:
       APP_PACKAGE_ZIP: build.zip
