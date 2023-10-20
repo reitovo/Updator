@@ -53,9 +53,14 @@ public partial class MainWindow : Window {
          cmd = cmd.Replace(escape.ToString(), @$"\{escape}");
       }
 
+      App.AppLog.LogTrace($"系统命令 {cmd}");
       using var process = new Process();
       process.StartInfo = new ProcessStartInfo {
          RedirectStandardOutput = true,
+         RedirectStandardError = true,
+         StandardErrorEncoding = Encoding.UTF8,
+         StandardOutputEncoding = Encoding.UTF8,
+         UseShellExecute = true,
          CreateNoWindow = true,
          WindowStyle = ProcessWindowStyle.Hidden,
          FileName = "/bin/bash",
@@ -64,6 +69,15 @@ public partial class MainWindow : Window {
 
       process.Start();
       process.WaitForExit();
+      if (process.ExitCode != 0) {
+         App.AppLog.LogError("执行失败");
+         App.AppLog.LogDebug(process.StandardOutput.ReadToEnd());
+         App.AppLog.LogError(process.StandardError.ReadToEnd());
+      } else {
+         App.AppLog.LogTrace("执行成功");
+         App.AppLog.LogTrace(process.StandardOutput.ReadToEnd());
+         App.AppLog.LogTrace(process.StandardError.ReadToEnd());
+      }
    }
 
    private void SetProjectName(string name) {
