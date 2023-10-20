@@ -48,12 +48,15 @@ public partial class MainWindow : Window {
       }
    }
 
-   private void Exec(string cmd) {
+   private string EscapeCommand(string cmd) { 
       var escapeList = @"$#&*?;|<>(){}[]~!";
       foreach (char escape in escapeList) {
          cmd = cmd.Replace(escape.ToString(), @$"\{escape}");
       }
-
+      return cmd;
+   }
+   
+   private void Exec(string cmd) {
       App.AppLog.LogTrace($"系统命令 {cmd}");
       using var process = new Process();
       process.StartInfo = new ProcessStartInfo {
@@ -267,7 +270,7 @@ public partial class MainWindow : Window {
                   if (OperatingSystem.IsMacOS()) {
                      var name = Environment.GetEnvironmentVariable("UPDATOR_MACOS_APPNAME");
                      var old = Path.Combine(Environment.CurrentDirectory, $"{name}.app");
-                     var deleteParam = (name == null || !Directory.Exists(old)) ? string.Empty : $"--delete {old}";
+                     var deleteParam = (name == null || !Directory.Exists(old)) ? string.Empty : $"--delete '{old}'";
 
                      name ??= "启动器";
                      var file = $"{name}({latestDownloaderVersion}).zip";
@@ -275,16 +278,16 @@ public partial class MainWindow : Window {
                      await File.WriteAllBytesAsync(file, payload);
 
                      App.AppLog.LogInformation($"MacOS 更新 {app} {deleteParam}");
-                     Exec($"rm -rf \"build.app\"");
-                     Exec($"ditto -x -k \"{file}\" .");
-                     Exec($"mv \"build.app\" \"{app}\"");
-                     Exec($"open \"{app}\" --args {deleteParam}");
+                     Exec($"rm -rf build.app");
+                     Exec($"ditto -x -k '{file}' .");
+                     Exec($"mv 'build.app' '{app}'");
+                     Exec($"open '{app}' --args {deleteParam}");
                   } else if (OperatingSystem.IsLinux()) {
                      var name = Path.GetFileNameWithoutExtension(Environment.ProcessPath)!;
                      name = Regex.Replace(name, @"\(\d+\)", string.Empty);
                      var file = $"{name}({latestDownloaderVersion})";
                      await File.WriteAllBytesAsync(file, payload);
-                     Exec($"chmod +x \"{file}\"");
+                     Exec($"chmod +x '{file}'");
                      Process.Start(new ProcessStartInfo() {
                         FileName = file,
                         CreateNoWindow = false,
@@ -489,7 +492,9 @@ public partial class MainWindow : Window {
 
          // Compare checksum and download if mismatch.
          // Use parallel to speed up.
-         await Parallel.ForEachAsync(desc.files, async (f, ct) => {
+         await Parallel.ForEachAsync(desc.files, new ParallelOptions() {
+            MaxDegreeOfParallelism = Math.Min(Environment.ProcessorCount * 2, 32)
+         }, async (f, ct) => {
             var fullPath = new FileInfo(Path.Combine(distRoot, f.objectKey));
             var dir = fullPath.Directory!;
             if (!dir.Exists) {
@@ -564,12 +569,14 @@ public partial class MainWindow : Window {
          // Start the payload executable  
          var executable = Path.Combine(distRoot, desc.executable);
          if (!OperatingSystem.IsWindows()) {
-            Exec($"chmod +x \"{executable}\"");
-            Process.Start(new ProcessStartInfo() {
+            Exec($"chmod +x '{executable}'");
+            Process.Start(new ProcessStartInfo {
+               UseShellExecute = false,
+               CreateNoWindow = true,
+               WindowStyle = ProcessWindowStyle.Hidden,
                FileName = "/bin/bash",
-               WorkingDirectory = new DirectoryInfo(executable).Parent!.FullName,
-               Arguments = $"-c \"nohup {executable} >/dev/null 2>&1 &\"",
-               UseShellExecute = true
+               WorkingDirectory = distRoot,
+               Arguments = $"-c \"nohup '{executable}' >/dev/null 2>&1 &\""
             });
          } else {
             Process.Start(new ProcessStartInfo() {
