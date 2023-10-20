@@ -10,9 +10,52 @@ concurrency:
   cancel-in-progress: true
   
 jobs: 
-  build:
+  build-win-linux:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: code
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '7'
+
+      - name: Publish Windows
+        run: dotnet publish -r win-x64 -c Release --self-contained --framework net7.0 -o "${{ github.workspace }}/win"
+        working-directory: ${{ github.workspace }}/code/Updator.Downloader.UI
+
+      - name: Publish Linux
+        run: dotnet publish -r linux-x64 -c Release --self-contained --framework net7.0 -o "${{ github.workspace }}/linux"
+        working-directory: ${{ github.workspace }}/code/Updator.Downloader.UI
+
+      - name: Build Publisher
+        run: dotnet build -o "${{ github.workspace }}/publisher"
+        working-directory: ${{ github.workspace }}/code/Updator.Downloader.Publish
+
+      - name: Upload
+        run: |
+          dotnet Updator.Downloader.Publish.dll --config ${{ secrets.PUBLISHER_CONFIG }} --os win --path "${{ github.workspace }}/win/Updator.Downloader.UI.exe"
+          dotnet Updator.Downloader.Publish.dll --config ${{ secrets.PUBLISHER_CONFIG }} --os linux --path "${{ github.workspace }}/linux/Updator.Downloader.UI"
+        working-directory: ${{ github.workspace }}/publisher 
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: win
+          path: "${{ github.workspace }}/win/Updator.Downloader.UI.exe"
+          
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: linux
+          path: "${{ github.workspace }}/linux/Updator.Downloader.UI"
+          
+          
+  build-osx:
     runs-on: macos-latest
-    if: ${{ !contains(github.event.head_commit.message, 'skip-ci') }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -77,40 +120,17 @@ jobs:
             xcrun notarytool submit "build.zip" --wait --keychain-profile "AC_PASSWORD"
             xcrun stapler staple "build.app"
 
-      - name: Publish Windows
-        run: dotnet publish -r win-x64 -c Release --self-contained --framework net7.0 -o "${{ github.workspace }}/win"
-        working-directory: ${{ github.workspace }}/code/Updator.Downloader.UI
-
-      - name: Publish Linux
-        run: dotnet publish -r linux-x64 -c Release --self-contained --framework net7.0 -o "${{ github.workspace }}/linux"
-        working-directory: ${{ github.workspace }}/code/Updator.Downloader.UI
-        
       - name: Build Publisher
         run: dotnet build -o "${{ github.workspace }}/publisher"
         working-directory: ${{ github.workspace }}/code/Updator.Downloader.Publish
         
       - name: Upload
         run: |
-          dotnet Updator.Downloader.Publish.dll --config ${{ secrets.PUBLISHER_CONFIG }} --os win --path "${{ github.workspace }}/win/Updator.Downloader.UI.exe"
-          dotnet Updator.Downloader.Publish.dll --config ${{ secrets.PUBLISHER_CONFIG }} --os linux --path "${{ github.workspace }}/linux/Updator.Downloader.UI"
           dotnet Updator.Downloader.Publish.dll --config ${{ secrets.PUBLISHER_CONFIG }} --os osx --path "${{ github.workspace }}/build.app"
         working-directory: ${{ github.workspace }}/publisher
-      
-      - name: Zip Artifacts
-        working-directory: ${{ github.workspace }}
-        run: |
-          mkdir "artifacts"
-          mkdir "artifacts/linux"
-          mkdir "artifacts/win"
-          mkdir "artifacts/osx"
-          
-          cp "${{ github.workspace }}/linux/Updator.Downloader.UI" "artifacts/linux/"
-          cp "${{ github.workspace }}/win/Updator.Downloader.UI.exe" "artifacts/win/"
-          cp -r "${{ github.workspace }}/build.app" "artifacts/osx/"
-          zip -r artifacts.zip artifacts
           
       - name: Upload Artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: build
-          path: artifacts.zip
+          name: osx
+          path: "${{ github.workspace }}/build.app.zip"
