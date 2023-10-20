@@ -163,5 +163,7 @@ jobs:
           name: osx
           path: "${{ github.workspace }}/${{ env.APP_PACKAGE_ZIP }}"
           
-      - name: Restore Keystore
-        run: security default-keychain -s login.keychain
+      - name: Restore
+        run: |
+          security default-keychain -s login.keychain
+          rm -rf ${{ github.workspace }}
