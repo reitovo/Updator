@@ -69,6 +69,7 @@ await Parallel.ForEachAsync(config.projects, new ParallelOptions() { MaxDegreeOf
    using var ms = new MemoryStream();
    var zip = ZipFile.Create(ms);
 
+   zip.StringCodec = StringCodec.FromEncoding(Encoding.UTF8);
    zip.BeginUpdate();
 
    var name = string.IsNullOrWhiteSpace(project.display) ? project.name : project.display;
