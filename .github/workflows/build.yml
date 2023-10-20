@@ -78,6 +78,9 @@ jobs:
 
   build-osx:
     runs-on: macos-latest
+    env:
+      APP_PACKAGE_ZIP: build.zip
+      APP_PACKAGE_NAME: build.app
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -92,12 +95,12 @@ jobs:
       - name: Prepare Package
         working-directory: ${{ github.workspace }} 
         run: |
-          mkdir "build.app"
-          mkdir "build.app/Contents"
-          mkdir "build.app/Contents/MacOS" 
+          mkdir "${{ env.APP_PACKAGE_NAME }}"
+          mkdir "${{ env.APP_PACKAGE_NAME }}/Contents"
+          mkdir "${{ env.APP_PACKAGE_NAME }}/Contents/MacOS" 
           
       - name: Publish Mac
-        run: dotnet publish -r osx-x64 -c Release --self-contained --framework net7.0 -o "${{ github.workspace }}/build.app/Contents/MacOS"
+        run: dotnet publish -r osx-x64 -c Release --self-contained --framework net7.0 -o "${{ github.workspace }}/${{ env.APP_PACKAGE_NAME }}/Contents/MacOS" -p:PublishSingleFile=false -p:IncludeNativeLibrariesForSelfExtract=false -p:IncludeAllContentForSelfExtract=false -p:EnableCompressionInSingleFile=false
         working-directory: ${{ github.workspace }}/code/Updator.Downloader.UI
 
       - name: Post Process Package
@@ -106,10 +109,10 @@ jobs:
           ICONS_FILE: ${{ github.workspace }}/code/Updator.Downloader.UI/MacOS/Icon.icns
           PLIST_FILE: ${{ github.workspace }}/code/Updator.Downloader.UI/MacOS/Info.plist
         run: |
-          mkdir "build.app/Contents/Resources"
+          mkdir "${{ env.APP_PACKAGE_NAME }}/Contents/Resources"
           
-          cp "${{ env.PLIST_FILE }}" "build.app/Contents/Info.plist"
-          cp "${{ env.ICONS_FILE }}" "build.app/Contents/Resources/Icon.icns"
+          cp "${{ env.PLIST_FILE }}" "${{ env.APP_PACKAGE_NAME }}/Contents/Info.plist"
+          cp "${{ env.ICONS_FILE }}" "${{ env.APP_PACKAGE_NAME }}/Contents/Resources/Icon.icns"
           
       - name: Setup Keychain
         run: |
@@ -126,21 +129,21 @@ jobs:
         env:
           ENTITLEMENTS_FILE: ${{ github.workspace }}/code/Updator.Downloader.UI/MacOS/App.entitlements
         run: |
-            find "build.app/Contents/MacOS/"|while read fname; do
+            find "${{ env.APP_PACKAGE_NAME }}/Contents/MacOS/"|while read fname; do
               if [ -f "$fname" ]
               then
                   echo "[INFO] Signing $fname"
                   codesign --force --timestamp --options=runtime --entitlements "${{ env.ENTITLEMENTS_FILE }}" --sign "${{ secrets.DEVELOPER_ID_CERTIFICATE_THUMBNAIL }}" "$fname"
               fi
             done
-            codesign --force --timestamp --options=runtime --entitlements "${{ env.ENTITLEMENTS_FILE }}" --sign "${{ secrets.DEVELOPER_ID_CERTIFICATE_THUMBNAIL }}" "build.app"    
+            codesign --force --timestamp --options=runtime --entitlements "${{ env.ENTITLEMENTS_FILE }}" --sign "${{ secrets.DEVELOPER_ID_CERTIFICATE_THUMBNAIL }}" "${{ env.APP_PACKAGE_NAME }}"    
           
       - name: Notarise App
         working-directory: ${{ github.workspace }}
         run: |
-            ditto -c -k --sequesterRsrc --keepParent "build.app" "build.zip"
-            xcrun notarytool submit "build.zip" --wait --keychain-profile "AC_PASSWORD"
-            xcrun stapler staple "build.app"
+            ditto -c -k --sequesterRsrc --keepParent "${{ env.APP_PACKAGE_NAME }}" "${{ env.APP_PACKAGE_ZIP }}"
+            xcrun notarytool submit "${{ env.APP_PACKAGE_ZIP }}" --wait --keychain-profile "AC_PASSWORD"
+            xcrun stapler staple "${{ env.APP_PACKAGE_NAME }}"
 
       - name: Build Publisher
         run: dotnet build -o "${{ github.workspace }}/publisher"
@@ -148,11 +151,11 @@ jobs:
         
       - name: Upload
         run: |
-          dotnet Updator.Downloader.Publish.dll --config ${{ secrets.PUBLISHER_CONFIG }} --os osx --path "${{ github.workspace }}/build.zip"
+          dotnet Updator.Downloader.Publish.dll --config ${{ secrets.PUBLISHER_CONFIG }} --os osx --path "${{ github.workspace }}/${{ env.APP_PACKAGE_ZIP }}"
         working-directory: ${{ github.workspace }}/publisher 
           
       - name: Upload Artifacts
         uses: actions/upload-artifact@v3
         with:
           name: osx
-          path: "${{ github.workspace }}/build.zip"
+          path: "${{ github.workspace }}/${{ env.APP_PACKAGE_ZIP }}"

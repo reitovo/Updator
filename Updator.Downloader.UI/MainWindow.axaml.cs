@@ -215,27 +215,37 @@ public partial class MainWindow : Window {
                if (hash.SequenceEqual(signature)) {
                   App.AppLog.LogInformation($"更新校验完成");
                   var name = Path.GetFileNameWithoutExtension(Environment.ProcessPath)!;
-                  var ext = Path.GetExtension(Environment.ProcessPath)!;
-
                   name = Regex.Replace(name, @"\(\d+\)", string.Empty);
 
-                  var file = $"{name}({latestDownloaderVersion}){ext}";
-                  await File.WriteAllBytesAsync(file, payload);
-
-                  if (Meta.RuntimeString == "osx") {
-                     ZipFile.ExtractToDirectory(file, $"{file}.app", Encoding.UTF8, true);
-                     Exec($"chmod +x \"{file}.app/Contents/MacOS/Updator.Downloader.UI\"");
-                     File.Delete(file);
-                     file += ".app";
-                  } else if (Meta.RuntimeString == "linux") {
+                  if (OperatingSystem.IsMacOS()) {
+                     var file = $"{name}({latestDownloaderVersion}).zip";
+                     var app = $"{name}({latestDownloaderVersion}).app";
+                     await File.WriteAllBytesAsync(file, payload);
+                     Exec($"open \"{file}\"");
+                     Exec($"mv \"build.app\" {app}");
+                     Process.Start(new ProcessStartInfo() {
+                        FileName = app,
+                        CreateNoWindow = false
+                     });
+                  } else if (OperatingSystem.IsLinux()) {
+                     var file = $"{name}({latestDownloaderVersion})";
+                     await File.WriteAllBytesAsync(file, payload);
                      Exec($"chmod +x \"{file}\"");
+                     Process.Start(new ProcessStartInfo() {
+                        FileName = file,
+                        CreateNoWindow = false,
+                        Arguments = $"--delete \"{Environment.ProcessPath}\""
+                     });
+                  } else {
+                     var file = $"{name}({latestDownloaderVersion}).exe";
+                     await File.WriteAllBytesAsync(file, payload);
+                     Process.Start(new ProcessStartInfo() {
+                        FileName = file,
+                        CreateNoWindow = false,
+                        Arguments = $"--delete \"{Environment.ProcessPath}\""
+                     });
                   }
 
-                  Process.Start(new ProcessStartInfo() {
-                     FileName = file,
-                     CreateNoWindow = false,
-                     Arguments = $"--delete \"{Environment.ProcessPath}\""
-                  });
                   Dispatcher.UIThread.InvokeShutdown();
                } else {
                   Popup.Exception("更新校验失败");
@@ -495,29 +505,18 @@ public partial class MainWindow : Window {
 
          App.AppLog.LogInformation($"启动软件");
 
-         // Start the payload executable 
-         if (OperatingSystem.IsMacOS()) {
-            var executable = Path.Combine(distRoot, desc.osxAppBundle, "Contents", "MacOS", desc.executable);
+         // Start the payload executable  
+         var executable = Path.Combine(distRoot, desc.executable);
+         if (!OperatingSystem.IsWindows()) {
             Exec($"chmod +x \"{executable}\"");
-            Process.Start(new ProcessStartInfo() {
-               FileName = Path.Combine(distRoot, desc.osxAppBundle),
-               WorkingDirectory = distRoot,
-               Arguments = passArgument,
-               UseShellExecute = true
-            });
-         } else {
-            var executable = Path.Combine(distRoot, desc.executable);
-            if (OperatingSystem.IsLinux()) {
-               Exec($"chmod +x \"{executable}\"");
-            }
-
-            Process.Start(new ProcessStartInfo() {
-               FileName = executable,
-               WorkingDirectory = new DirectoryInfo(executable).Parent!.FullName,
-               Arguments = passArgument,
-               UseShellExecute = true
-            });
          }
+
+         Process.Start(new ProcessStartInfo() {
+            FileName = executable,
+            WorkingDirectory = new DirectoryInfo(executable).Parent!.FullName,
+            Arguments = passArgument,
+            UseShellExecute = true
+         });
 
          if (displayUpdateLog && !string.IsNullOrWhiteSpace(desc.updateLogUrl)) {
             var result = await Dispatcher.UIThread.Invoke(async () => {
