@@ -273,8 +273,8 @@ public partial class MainWindow : Window {
                      var deleteParam = (name == null || !Directory.Exists(old)) ? string.Empty : $"--delete '{old}'";
 
                      name ??= "启动器";
-                     var file = $"{name}({latestDownloaderVersion}).zip";
-                     var app = $"{name}({latestDownloaderVersion}).app";
+                     var file = $"{name}.{latestDownloaderVersion}.zip";
+                     var app = $"{name}.{latestDownloaderVersion}.app";
                      await File.WriteAllBytesAsync(file, payload);
 
                      App.AppLog.LogInformation($"MacOS 更新 {app} {deleteParam}");

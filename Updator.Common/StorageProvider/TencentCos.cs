@@ -49,6 +49,7 @@ public class TencentCos : IStorageProvider, ICdnRefresh {
          .SetRegion(config.region) // 设置默认的区域, COS 地域的简称请参照 https://cloud.tencent.com/document/product/436/6224  
          .SetConnectionTimeoutMs(500000)
          .SetReadWriteTimeoutMs(500000)
+         .SetEndpointSuffix("cos.accelerate.myqcloud.com")
          .Build();
 
       string secretId = config.secretId; // 云 API 密钥 SecretId, 获取 API 密钥请参照 https://console.cloud.tencent.com/cam/capi
