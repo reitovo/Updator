@@ -230,21 +230,21 @@ public partial class MainWindow : Window {
                // Compare SHA512 checksum
                if (hash.SequenceEqual(signature)) {
                   App.AppLog.LogInformation($"更新校验完成");
-                  var name = Path.GetFileNameWithoutExtension(Environment.ProcessPath)!;
-                  name = Regex.Replace(name, @"\(\d+\)", string.Empty);
 
                   if (OperatingSystem.IsMacOS()) {
+                     var name = Environment.GetEnvironmentVariable("UPDATOR_MACOS_APPNAME");
+                     var deleteParam = name == null ? string.Empty : $"--args --delete {Path.Combine(Environment.CurrentDirectory, $"{name}.app")}";
+                     name ??= "启动器";
                      var file = $"{name}({latestDownloaderVersion}).zip";
                      var app = $"{name}({latestDownloaderVersion}).app";
                      await File.WriteAllBytesAsync(file, payload);
                      Exec($"rm -rf \"build.app\"");
                      Exec($"ditto -x -k \"{file}\" .");
-                     Exec($"mv \"build.app\" {app}");
-                     Process.Start(new ProcessStartInfo() {
-                        FileName = app,
-                        CreateNoWindow = false
-                     });
+                     Exec($"mv \"build.app\" \"{app}\"");
+                     Exec($"open \"{app}\" {deleteParam}");
                   } else if (OperatingSystem.IsLinux()) {
+                     var name = Path.GetFileNameWithoutExtension(Environment.ProcessPath)!;
+                     name = Regex.Replace(name, @"\(\d+\)", string.Empty);
                      var file = $"{name}({latestDownloaderVersion})";
                      await File.WriteAllBytesAsync(file, payload);
                      Exec($"chmod +x \"{file}\"");
@@ -254,6 +254,8 @@ public partial class MainWindow : Window {
                         Arguments = $"--delete \"{Environment.ProcessPath}\""
                      });
                   } else {
+                     var name = Path.GetFileNameWithoutExtension(Environment.ProcessPath)!;
+                     name = Regex.Replace(name, @"\(\d+\)", string.Empty);
                      var file = $"{name}({latestDownloaderVersion}).exe";
                      await File.WriteAllBytesAsync(file, payload);
                      Process.Start(new ProcessStartInfo() {

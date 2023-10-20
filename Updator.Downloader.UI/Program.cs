@@ -15,26 +15,31 @@ class Program {
    // yet and stuff might break. 
    [STAThread]
    public static void Main(string[] args) {
-      try {  
+      try {
          AppDomain.CurrentDomain.UnhandledException += (sender, eventArgs) => {
             App.AppLog.LogError(eventArgs.ExceptionObject as Exception, "未捕获异常");
          };
 
-         App.AppLog.LogInformation($"启动器 {Meta.RuntimeString} {Meta.RuntimeVersion}"); 
+         App.AppLog.LogInformation($"启动器 {Meta.RuntimeString} {Meta.RuntimeVersion}");
          App.AppLog.LogInformation($"工作目录 {Environment.CurrentDirectory}");
-         
+
          if (OperatingSystem.IsMacOS()) {
             var pwd = Process.GetCurrentProcess().MainModule?.FileName;
             if (!string.IsNullOrWhiteSpace(pwd)) {
                var match = ".app/Contents/MacOS";
                if (pwd.Contains(match)) {
                   pwd = pwd[..pwd.IndexOf(match, StringComparison.Ordinal)];
+
+                  var appName = pwd[(pwd.LastIndexOf('/') + 1)..];
+                  Environment.SetEnvironmentVariable("UPDATOR_MACOS_APPNAME", appName);
+
                   pwd = pwd[..pwd.LastIndexOf('/')];
                   Environment.CurrentDirectory = pwd;
-                  App.AppLog.LogInformation($"改变工作目录 {Environment.CurrentDirectory}");
+                  App.AppLog.LogInformation($"改变工作目录 {Environment.CurrentDirectory} {appName}");
+
                }
             }
-         } 
+         }
 
          var parsed = new Parser(a => {
             a.AllowMultiInstance = true;
@@ -46,10 +51,15 @@ class Program {
                if (!string.IsNullOrWhiteSpace(val.DeleteFile)) {
                   Task.Run(async () => {
                      var deleteRetry = 5;
-                     retryDelete:
+                  retryDelete:
                      try {
                         await Task.Delay(TimeSpan.FromSeconds(1));
-                        File.Delete(val.DeleteFile);
+                        var attr = File.GetAttributes(val.DeleteFile);
+                        if ((attr & FileAttributes.Directory) == FileAttributes.Directory) {
+                           Directory.Delete(val.DeleteFile, true);
+                        } else {
+                           File.Delete(val.DeleteFile);
+                        }
                      } catch (Exception ex) {
                         Debug.WriteLine(ex);
                         if (deleteRetry-- > 0) {
@@ -66,7 +76,7 @@ class Program {
          App.AppLog.LogInformation($"启动 UI");
 
          BuildAvaloniaApp()
-           .StartWithClassicDesktopLifetime(args);
+            .StartWithClassicDesktopLifetime(args);
       } catch (Exception ex) {
          App.AppLog.LogError(ex, "错误");
       }
@@ -75,8 +85,8 @@ class Program {
    // Avalonia configuration, don't remove; also used by visual designer.
    public static AppBuilder BuildAvaloniaApp()
       => AppBuilder.Configure<AppUI>()
-        .UsePlatformDetect()
-        .LogToTrace();
+         .UsePlatformDetect()
+         .LogToTrace();
 }
 
 file class Options {
