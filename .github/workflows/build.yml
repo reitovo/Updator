@@ -148,23 +148,11 @@ jobs:
         
       - name: Upload
         run: |
-          dotnet Updator.Downloader.Publish.dll --config ${{ secrets.PUBLISHER_CONFIG }} --os osx --path "${{ github.workspace }}/build.app"
-        working-directory: ${{ github.workspace }}/publisher
-        
-      - name: Compress Artifact
-        run: | 
-          mkdir "osx"
-          cp -r "build.app" "osx/"
-          zip -r output.zip osx
+          dotnet Updator.Downloader.Publish.dll --config ${{ secrets.PUBLISHER_CONFIG }} --os osx --path "${{ github.workspace }}/build.zip"
+        working-directory: ${{ github.workspace }}/publisher 
           
       - name: Upload Artifacts
         uses: actions/upload-artifact@v3
         with:
           name: osx
-          path: "${{ github.workspace }}/output.zip"
-          
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: osx-upload
           path: "${{ github.workspace }}/build.zip"
