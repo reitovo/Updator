@@ -100,7 +100,7 @@ jobs:
           mkdir "${{ env.APP_PACKAGE_NAME }}/Contents/MacOS" 
           
       - name: Publish Mac
-        run: dotnet publish -r osx-x64 -c Release --self-contained --framework net7.0 -o "${{ github.workspace }}/${{ env.APP_PACKAGE_NAME }}/Contents/MacOS" -p:PublishSingleFile=false -p:IncludeNativeLibrariesForSelfExtract=false -p:IncludeAllContentForSelfExtract=false -p:EnableCompressionInSingleFile=false
+        run: dotnet publish -r osx-x64 -c Release --self-contained --framework net7.0 -o "${{ github.workspace }}/${{ env.APP_PACKAGE_NAME }}/Contents/MacOS" 
         working-directory: ${{ github.workspace }}/code/Updator.Downloader.UI
 
       - name: Post Process Package
