@@ -1,0 +1,41 @@
+{ 
+    "suffix": "启动器",
+    "projects": [
+        {
+            "name": "弹幕姬",
+            "platform": "win",
+            "display": "弹幕姬",
+            "sourceKeyPrefix": "bliveassist"
+        },
+        {
+            "name": "弹幕姬面捕连接助手-osx",
+            "platform": "osx",
+            "display": "弹幕姬面捕连接助手",
+            "sourceKeyPrefix": "blive-face-relay/osx"
+        },
+        {
+            "name": "弹幕姬面捕连接助手-win",
+            "platform": "win",
+            "display": "弹幕姬面捕连接助手",
+            "sourceKeyPrefix": "blive-face-relay/win"
+        },
+        {
+            "name": "VLink",
+            "platform": "win",
+            "display": "VLink联动",
+            "sourceKeyPrefix": "vtslink"
+        },
+        {
+            "name": "点歌姬-win",
+            "platform": "win",
+            "display": "点歌姬",
+            "sourceKeyPrefix": "songchan/win"
+        },
+        {
+            "name": "点歌姬-osx",
+            "platform": "osx",
+            "display": "点歌姬",
+            "sourceKeyPrefix": "songchan/osx"
+        }
+    ]
+}
