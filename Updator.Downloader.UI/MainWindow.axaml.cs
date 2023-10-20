@@ -60,7 +60,7 @@ public partial class MainWindow : Window {
          RedirectStandardError = true,
          StandardErrorEncoding = Encoding.UTF8,
          StandardOutputEncoding = Encoding.UTF8,
-         UseShellExecute = true,
+         UseShellExecute = false,
          CreateNoWindow = true,
          WindowStyle = ProcessWindowStyle.Hidden,
          FileName = "/bin/bash",
@@ -69,14 +69,16 @@ public partial class MainWindow : Window {
 
       process.Start();
       process.WaitForExit();
+      var stdOut = process.StandardOutput.ReadToEnd();
+      var stdErr = process.StandardError.ReadToEnd();
       if (process.ExitCode != 0) {
          App.AppLog.LogError("执行失败");
-         App.AppLog.LogDebug(process.StandardOutput.ReadToEnd());
-         App.AppLog.LogError(process.StandardError.ReadToEnd());
+         App.AppLog.LogError("Out: " + stdOut);
+         App.AppLog.LogError("Err: " + stdErr);
       } else {
          App.AppLog.LogTrace("执行成功");
-         App.AppLog.LogTrace(process.StandardOutput.ReadToEnd());
-         App.AppLog.LogTrace(process.StandardError.ReadToEnd());
+         App.AppLog.LogTrace("Out: " + stdOut);
+         App.AppLog.LogTrace("Err: " + stdErr);
       }
    }
 
@@ -235,7 +237,8 @@ public partial class MainWindow : Window {
                      var file = $"{name}({latestDownloaderVersion}).zip";
                      var app = $"{name}({latestDownloaderVersion}).app";
                      await File.WriteAllBytesAsync(file, payload);
-                     Exec($"open \"{file}\"");
+                     Exec($"rm -rf \"build.app\"");
+                     Exec($"ditto -x -k \"{file}\" .");
                      Exec($"mv \"build.app\" {app}");
                      Process.Start(new ProcessStartInfo() {
                         FileName = app,
@@ -523,14 +526,20 @@ public partial class MainWindow : Window {
          var executable = Path.Combine(distRoot, desc.executable);
          if (!OperatingSystem.IsWindows()) {
             Exec($"chmod +x \"{executable}\"");
+            Process.Start(new ProcessStartInfo() {
+               FileName = "/bin/bash",
+               WorkingDirectory = new DirectoryInfo(executable).Parent!.FullName,
+               Arguments = $"-c \"nohup {executable} >/dev/null 2>&1 &\"",
+               UseShellExecute = true
+            });
+         } else {
+            Process.Start(new ProcessStartInfo() {
+               FileName = executable,
+               WorkingDirectory = new DirectoryInfo(executable).Parent!.FullName,
+               Arguments = passArgument,
+               UseShellExecute = true
+            });
          }
-
-         Process.Start(new ProcessStartInfo() {
-            FileName = executable,
-            WorkingDirectory = new DirectoryInfo(executable).Parent!.FullName,
-            Arguments = passArgument,
-            UseShellExecute = true
-         });
 
          if (displayUpdateLog && !string.IsNullOrWhiteSpace(desc.updateLogUrl)) {
             var result = await Dispatcher.UIThread.Invoke(async () => {
