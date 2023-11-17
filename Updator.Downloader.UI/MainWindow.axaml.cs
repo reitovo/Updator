@@ -465,12 +465,12 @@ public partial class MainWindow : Window {
                if (desc.reinstallBuildId is { Count: > 0 }) {
                   foreach (var id in desc.reinstallBuildId) {
                      if (oldDesc.buildId < id) {
+                        App.AppLog.LogInformation($"清空历史文件");
                         Directory.Delete(distRoot, true);
                         break;
                      }
                   }
-               }
-
+               } 
 
                if (desc.updateLogs is { Count: > 0 }) {
                   var logs = desc.updateLogs.Where(a => a.buildId > oldDesc.buildId).ToList();
