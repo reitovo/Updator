@@ -529,7 +529,8 @@ public partial class MainWindow : Window {
                      using var http = new HttpClient(new SocketsHttpHandler() {
                         ConnectTimeout = TimeSpan.FromSeconds(10)
                      });
-                     http.DefaultRequestHeaders.Add("User-Agent", $"Updator.Downloader.UI/{Meta.RuntimeString}/{Meta.RuntimeVersion}");
+                     http.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent",
+                        $"Updator.Downloader.UI/{Meta.RuntimeString}/{Meta.RuntimeVersion}");
                      var b = await http.GetByteArrayAsync(Path.Combine(source.distributionUrl, f.objectKey), ct);
                      using var ms = new MemoryStream(b);
                      ms.Position = 0;

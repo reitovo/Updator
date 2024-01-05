@@ -303,9 +303,9 @@ public class TencentCos : IStorageProvider, ICdnRefresh {
 
    public async Task RefreshObjectKeys(IEnumerable<string> objectKeys) {
       if (_config.useEdgeOne)
-         await RefreshRootEdgeOne();
+         await RefreshObjectKeysEdgeOne(objectKeys);
       else
-         await RefreshRootCdn();
+         await RefreshObjectKeysCdn(objectKeys);
    }
 
    public async Task RefreshRoot() {
