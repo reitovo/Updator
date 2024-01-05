@@ -9,6 +9,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using AsyncImageLoader.Loaders;
 using Avalonia.Controls;
@@ -470,7 +471,7 @@ public partial class MainWindow : Window {
                         break;
                      }
                   }
-               } 
+               }
 
                if (desc.updateLogs is { Count: > 0 }) {
                   var logs = desc.updateLogs.Where(a => a.buildId > oldDesc.buildId).ToList();
@@ -493,8 +494,10 @@ public partial class MainWindow : Window {
 
          // Compare checksum and download if mismatch.
          // Use parallel to speed up.
+         var cts = new CancellationTokenSource();
          await Parallel.ForEachAsync(desc.files, new ParallelOptions() {
-            MaxDegreeOfParallelism = Math.Min(Environment.ProcessorCount * 2, 32)
+            MaxDegreeOfParallelism = Math.Min(Environment.ProcessorCount * 2, 24),
+            CancellationToken = cts.Token
          }, async (f, ct) => {
             var fullPath = new FileInfo(Path.Combine(distRoot, f.objectKey));
             var dir = fullPath.Directory!;
@@ -520,11 +523,13 @@ public partial class MainWindow : Window {
 
             // Download if needed
             if (download) {
+               var retryCount = 0;
                while (true) {
                   try {
                      using var http = new HttpClient(new SocketsHttpHandler() {
-                        ConnectTimeout = TimeSpan.FromSeconds(10),
+                        ConnectTimeout = TimeSpan.FromSeconds(10)
                      });
+                     http.DefaultRequestHeaders.Add("User-Agent", $"Updator.Downloader.UI/{Meta.RuntimeString}/{Meta.RuntimeVersion}");
                      var b = await http.GetByteArrayAsync(Path.Combine(source.distributionUrl, f.objectKey), ct);
                      using var ms = new MemoryStream(b);
                      ms.Position = 0;
@@ -544,7 +549,15 @@ public partial class MainWindow : Window {
                      // ignored
                   } catch (Exception ex) {
                      App.AppLog.LogError(ex, $"下载错误");
-                     await Task.Delay(TimeSpan.FromSeconds(1), ct);
+                     if (retryCount++ < 3) {
+                        await Task.Delay(TimeSpan.FromSeconds(1), ct);
+                     } else {
+                        if (!cts.IsCancellationRequested) {
+                           cts.Cancel();
+                           Popup.Exception(Strings.DownloadFileFailed, ex);
+                        }
+                        break;
+                     }
                   }
                }
             }
@@ -552,7 +565,11 @@ public partial class MainWindow : Window {
             IncrementProgressBar(1);
          });
 
-         await File.WriteAllTextAsync(descPath, JsonSerializer.Serialize(desc, DistDescriptionSerializer.Default.DistDescription));
+         if (cts.IsCancellationRequested) {
+            return;
+         }
+
+         await File.WriteAllTextAsync(descPath, JsonSerializer.Serialize(desc, DistDescriptionSerializer.Default.DistDescription), cts.Token);
 
          var passArgument = string.Empty;
          if (!string.IsNullOrWhiteSpace(desc.passBuildId)) {
@@ -614,7 +631,7 @@ public partial class MainWindow : Window {
             }
          }
 
-         await Task.Delay(TimeSpan.FromSeconds(3));
+         await Task.Delay(TimeSpan.FromSeconds(3), cts.Token);
          Dispatcher.UIThread.InvokeShutdown();
       } catch (Exception ex) {
          App.AppLog.LogError(ex, "错误");

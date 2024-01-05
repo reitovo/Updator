@@ -69,4 +69,7 @@
     <data name="OpenSourcesFile" xml:space="preserve">
         <value>sources.json not found, please manually open it.</value>
     </data>
+    <data name="DownloadFileFailed" xml:space="preserve">
+        <value>Download failed, try again later</value>
+    </data>
 </root>

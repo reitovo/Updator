@@ -69,6 +69,15 @@ namespace Updator.Downloader.UI {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Download failed, try again later.
+        /// </summary>
+        internal static string DownloadFileFailed {
+            get {
+                return ResourceManager.GetString("DownloadFileFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Downloading files.
         /// </summary>
         internal static string DownloadUpdateFiles {
