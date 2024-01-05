@@ -259,7 +259,7 @@ public class TencentCos : IStorageProvider, ICdnRefresh {
             // 返回的resp是一个CreatePurgeTaskResponse的实例，与请求对象对应
             CreatePurgeTaskResponse resp = await client.CreatePurgeTask(req);
             // 输出json格式的字符串回包
-            Console.WriteLine(AbstractModel.ToJsonString(resp));
+            Debug.WriteLine(AbstractModel.ToJsonString(resp));
          }
       } catch (Exception ex) {
          Debug.WriteLine(ex);
@@ -294,7 +294,7 @@ public class TencentCos : IStorageProvider, ICdnRefresh {
             // 返回的resp是一个CreatePurgeTaskResponse的实例，与请求对象对应
             CreatePurgeTaskResponse resp = await client.CreatePurgeTask(req);
             // 输出json格式的字符串回包
-            Console.WriteLine(AbstractModel.ToJsonString(resp));
+            Debug.WriteLine(AbstractModel.ToJsonString(resp));
          }
       } catch (Exception ex) {
          Debug.WriteLine(ex);
