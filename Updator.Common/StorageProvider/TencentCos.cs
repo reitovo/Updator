@@ -11,6 +11,9 @@ using TencentCloud.Cdn.V20180606;
 using TencentCloud.Cdn.V20180606.Models;
 using TencentCloud.Common;
 using TencentCloud.Common.Profile;
+using TencentCloud.Teo.V20220901;
+using TencentCloud.Teo.V20220901.Models;
+using Task = System.Threading.Tasks.Task;
 
 namespace Uploader.StorageProvider;
 
@@ -35,6 +38,7 @@ public class TencentCosConfig {
 
    // If you need refresh cdn directory
    public string cdnRefreshPath { get; set; }
+   public bool useEdgeOne { get; set; }
 }
 
 // Tencent COS as storage, it supports CDN refresh
@@ -149,7 +153,7 @@ public class TencentCos : IStorageProvider, ICdnRefresh {
       });
    }
 
-   public async Task RefreshObjectKeys(IEnumerable<string> objectKeys) {
+   public async Task RefreshObjectKeysCdn(IEnumerable<string> objectKeys) {
       try {
          if (!string.IsNullOrWhiteSpace(_config.cdnRefreshRoot)) {
             Credential cred = new Credential {
@@ -185,7 +189,7 @@ public class TencentCos : IStorageProvider, ICdnRefresh {
       }
    }
 
-   public async Task RefreshRoot() {
+   public async Task RefreshRootCdn() {
       try {
          if (!string.IsNullOrWhiteSpace(_config.cdnRefreshPath)) {
             Credential cred = new Credential {
@@ -204,7 +208,7 @@ public class TencentCos : IStorageProvider, ICdnRefresh {
             CdnClient client = new CdnClient(cred, _config.region, clientProfile);
             // 实例化一个请求对象,每个接口都会对应一个request对象 
             PurgePathCacheRequest req = new PurgePathCacheRequest() {
-               Paths = new[] {_config.cdnRefreshPath},
+               Paths = new[] { _config.cdnRefreshPath },
                UrlEncode = true,
                FlushType = "flush"
             };
@@ -220,5 +224,91 @@ public class TencentCos : IStorageProvider, ICdnRefresh {
       } catch (Exception ex) {
          Debug.WriteLine(ex);
       }
+   }
+
+   public async Task RefreshObjectKeysEdgeOne(IEnumerable<string> objectKeys) {
+      try {
+         if (!string.IsNullOrWhiteSpace(_config.cdnRefreshRoot)) {
+            Credential cred = new Credential {
+               SecretId = _config.secretId,
+               SecretKey = _config.secretKey
+            };
+            // 实例化一个client选项，可选的，没有特殊需求可以跳过
+            ClientProfile clientProfile = new ClientProfile();
+            // 实例化一个http选项，可选的，没有特殊需求可以跳过
+            // 实例化一个http选项，可选的，没有特殊需求可以跳过
+            HttpProfile httpProfile = new HttpProfile {
+               Endpoint = ("teo.tencentcloudapi.com")
+            };
+            clientProfile.HttpProfile = httpProfile;
+
+            // 实例化要请求产品的client对象,clientProfile是可选的
+            TeoClient client = new TeoClient(cred, _config.region, clientProfile);
+            // 实例化一个请求对象,每个接口都会对应一个request对象
+            CreatePurgeTaskRequest req = new CreatePurgeTaskRequest() {
+               Type = "purge_url",
+               Method = "delete",
+               Targets = objectKeys.Select(a => Path.Combine(_config.cdnRefreshRoot, a).Replace(@"\", "/")).ToArray()
+            };
+
+            if (req.Targets.Length == 0)
+               return;
+
+            // 返回的resp是一个CreatePurgeTaskResponse的实例，与请求对象对应
+            CreatePurgeTaskResponse resp = await client.CreatePurgeTask(req);
+            // 输出json格式的字符串回包
+            Console.WriteLine(AbstractModel.ToJsonString(resp));
+         }
+      } catch (Exception ex) {
+         Debug.WriteLine(ex);
+      }
+   }
+
+   public async Task RefreshRootEdgeOne() {
+      try {
+         if (!string.IsNullOrWhiteSpace(_config.cdnRefreshPath)) {
+            Credential cred = new Credential {
+               SecretId = _config.secretId,
+               SecretKey = _config.secretKey
+            };
+            // 实例化一个client选项，可选的，没有特殊需求可以跳过
+            ClientProfile clientProfile = new ClientProfile();
+            // 实例化一个http选项，可选的，没有特殊需求可以跳过
+            HttpProfile httpProfile = new HttpProfile {
+               Endpoint = ("teo.tencentcloudapi.com")
+            };
+            clientProfile.HttpProfile = httpProfile;
+
+            // 实例化要请求产品的client对象,clientProfile是可选的
+            TeoClient client = new TeoClient(cred, _config.region, clientProfile);
+            // 实例化一个请求对象,每个接口都会对应一个request对象
+            CreatePurgeTaskRequest req = new CreatePurgeTaskRequest() {
+               Type = "purge_url",
+               Method = "delete",
+               Targets = new[] { _config.cdnRefreshPath }
+            };
+
+            // 返回的resp是一个CreatePurgeTaskResponse的实例，与请求对象对应
+            CreatePurgeTaskResponse resp = await client.CreatePurgeTask(req);
+            // 输出json格式的字符串回包
+            Console.WriteLine(AbstractModel.ToJsonString(resp));
+         }
+      } catch (Exception ex) {
+         Debug.WriteLine(ex);
+      }
+   }
+
+   public async Task RefreshObjectKeys(IEnumerable<string> objectKeys) {
+      if (_config.useEdgeOne)
+         await RefreshRootEdgeOne();
+      else
+         await RefreshRootCdn();
+   }
+
+   public async Task RefreshRoot() {
+      if (_config.useEdgeOne)
+         await RefreshRootEdgeOne();
+      else
+         await RefreshRootCdn();
    }
 }
