@@ -285,7 +285,7 @@ public class TencentCos : IStorageProvider, ICdnRefresh {
             TeoClient client = new TeoClient(cred, _config.region, clientProfile);
             // 实例化一个请求对象,每个接口都会对应一个request对象
             CreatePurgeTaskRequest req = new CreatePurgeTaskRequest() {
-               Type = "purge_url",
+               Type = "purge_prefix",
                Method = "delete",
                Targets = new[] { _config.cdnRefreshPath },
                ZoneId = _config.edgeOneZoneId
