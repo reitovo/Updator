@@ -39,6 +39,7 @@ public class TencentCosConfig {
    // If you need refresh cdn directory
    public string cdnRefreshPath { get; set; }
    public bool useEdgeOne { get; set; }
+   public string edgeOneZoneId { get; set; }
 }
 
 // Tencent COS as storage, it supports CDN refresh
@@ -248,7 +249,8 @@ public class TencentCos : IStorageProvider, ICdnRefresh {
             CreatePurgeTaskRequest req = new CreatePurgeTaskRequest() {
                Type = "purge_url",
                Method = "delete",
-               Targets = objectKeys.Select(a => Path.Combine(_config.cdnRefreshRoot, a).Replace(@"\", "/")).ToArray()
+               Targets = objectKeys.Select(a => Path.Combine(_config.cdnRefreshRoot, a).Replace(@"\", "/")).ToArray(),
+               ZoneId = _config.edgeOneZoneId
             };
 
             if (req.Targets.Length == 0)
@@ -285,7 +287,8 @@ public class TencentCos : IStorageProvider, ICdnRefresh {
             CreatePurgeTaskRequest req = new CreatePurgeTaskRequest() {
                Type = "purge_url",
                Method = "delete",
-               Targets = new[] { _config.cdnRefreshPath }
+               Targets = new[] { _config.cdnRefreshPath },
+               ZoneId = _config.edgeOneZoneId
             };
 
             // 返回的resp是一个CreatePurgeTaskResponse的实例，与请求对象对应
