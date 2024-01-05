@@ -63,6 +63,6 @@
         <value>源文件 sources.json 未找到，请手动选择该文件</value>
     </data>
     <data name="DownloadFileFailed" xml:space="preserve">
-        <value>下载失败，请稍后重试</value>
+        <value>下载或写入失败，请检查程序是否正在运行，或者网络环境不稳定，请稍后重试</value>
     </data>
 </root>
