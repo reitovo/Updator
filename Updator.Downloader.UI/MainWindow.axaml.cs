@@ -192,7 +192,7 @@ public partial class MainWindow : Window {
          var latestDownloaderVersion = 0;
          try {
             using var http = new HttpClient(new SocketsHttpHandler() {
-               ConnectTimeout = TimeSpan.FromSeconds(3)
+               ConnectTimeout = TimeSpan.FromSeconds(10)
             });
             if (int.TryParse(await http.GetStringAsync(Path.Combine(downloaderUrl, $"{Meta.RuntimeString}-build-id")), out var v)) {
                latestDownloaderVersion = v;
@@ -495,8 +495,13 @@ public partial class MainWindow : Window {
          // Compare checksum and download if mismatch.
          // Use parallel to speed up.
          var cts = new CancellationTokenSource();
+         using var downloadClient = new HttpClient(new SocketsHttpHandler() {
+            ConnectTimeout = TimeSpan.FromSeconds(10)
+         });
+         downloadClient.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent",
+            $"Updator.Downloader.UI/{Meta.RuntimeString}/{Meta.RuntimeVersion}");
          await Parallel.ForEachAsync(desc.files, new ParallelOptions() {
-            MaxDegreeOfParallelism = Math.Min(Environment.ProcessorCount * 2, 24),
+            MaxDegreeOfParallelism = Environment.ProcessorCount,
             CancellationToken = cts.Token
          }, async (f, ct) => {
             var fullPath = new FileInfo(Path.Combine(distRoot, f.objectKey));
@@ -526,12 +531,7 @@ public partial class MainWindow : Window {
                var retryCount = 0;
                while (true) {
                   try {
-                     using var http = new HttpClient(new SocketsHttpHandler() {
-                        ConnectTimeout = TimeSpan.FromSeconds(10)
-                     });
-                     http.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent",
-                        $"Updator.Downloader.UI/{Meta.RuntimeString}/{Meta.RuntimeVersion}");
-                     var b = await http.GetByteArrayAsync(Path.Combine(source.distributionUrl, f.objectKey), ct);
+                     var b = await downloadClient.GetByteArrayAsync(Path.Combine(source.distributionUrl, f.objectKey), ct);
                      using var ms = new MemoryStream(b);
                      ms.Position = 0;
                      var c = await check.CalculateChecksum(ms);

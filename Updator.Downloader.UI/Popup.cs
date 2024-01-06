@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
@@ -15,6 +16,7 @@ public static class Popup {
    public static void Exception(string error, Exception ex = null) {
       App.AppLog.LogError(ex, error);
       var msg = error + (ex == null ? string.Empty : "\n" + ex);
+      msg = string.Join('\n', msg.Split("\n").Take(20).Select(a => a.Trim()));
       Dispatcher.UIThread.Invoke(async () => {
          await MessageBoxManager.GetMessageBoxCustom(new MessageBoxCustomParams() {
                ContentTitle = Strings.Error,
