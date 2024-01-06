@@ -54,6 +54,7 @@ async Task<byte[]> DecompressBrotli(byte[] data) {
    return decompressed.ToArray();
 }
 
+var objectKeys = new List<string>();
 await Parallel.ForEachAsync(config.projects, new ParallelOptions() { MaxDegreeOfParallelism = 4 }, async (project, _) => {
    Console.WriteLine($@"Publish {project.name}");
    var path = Path.Combine(birthDir, project.name, "sources.json");
@@ -135,10 +136,14 @@ await Parallel.ForEachAsync(config.projects, new ParallelOptions() { MaxDegreeOf
 
    using var sourceMs = new MemoryStream(sources);
    await storage.UploadAsync($"{project.sourceKeyPrefix}/sources.json", sourceMs);
+
+   objectKeys.Add($"birth/{project.name}.zip");
+   objectKeys.Add($"{project.sourceKeyPrefix}/sources.json");
 });
 
 Console.WriteLine(@"Refresh CDN");
-await storage.RefreshRoot();
+await storage.CdnPurgePath();
+await storage.CdnPrefetchObjectKeys(objectKeys);
 
 Console.WriteLine(@"Done Tencent Cos");
 return 0;

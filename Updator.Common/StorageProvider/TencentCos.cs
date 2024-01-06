@@ -154,7 +154,7 @@ public class TencentCos : IStorageProvider, ICdnRefresh {
       });
    }
 
-   public async Task RefreshObjectKeysCdn(IEnumerable<string> objectKeys) {
+   private async Task PrefetchObjectKeysCdn(IEnumerable<string> objectKeys) {
       try {
          if (!string.IsNullOrWhiteSpace(_config.cdnRefreshRoot)) {
             Credential cred = new Credential {
@@ -172,7 +172,7 @@ public class TencentCos : IStorageProvider, ICdnRefresh {
             // 实例化要请求产品的client对象,clientProfile是可选的
             CdnClient client = new CdnClient(cred, _config.region, clientProfile);
             // 实例化一个请求对象,每个接口都会对应一个request对象
-            PurgeUrlsCacheRequest req = new PurgeUrlsCacheRequest {
+            var req = new PushUrlsCacheRequest {
                Urls = objectKeys.Select(a => Path.Combine(_config.cdnRefreshRoot, a).Replace(@"\", "/")).ToArray(),
                UrlEncode = true
             };
@@ -181,7 +181,7 @@ public class TencentCos : IStorageProvider, ICdnRefresh {
                return;
 
             // 返回的resp是一个PurgeUrlsCacheResponse的实例，与请求对象对应
-            PurgeUrlsCacheResponse resp = await client.PurgeUrlsCache(req);
+            var resp = await client.PushUrlsCache(req);
             // 输出json格式的字符串回包
             Debug.WriteLine(AbstractModel.ToJsonString(resp));
          }
@@ -190,7 +190,7 @@ public class TencentCos : IStorageProvider, ICdnRefresh {
       }
    }
 
-   public async Task RefreshRootCdn() {
+   private async Task PurgeRootCdn() {
       try {
          if (!string.IsNullOrWhiteSpace(_config.cdnRefreshPath)) {
             Credential cred = new Credential {
@@ -227,7 +227,7 @@ public class TencentCos : IStorageProvider, ICdnRefresh {
       }
    }
 
-   public async Task RefreshObjectKeysEdgeOne(IEnumerable<string> objectKeys) {
+   private async Task PrefetchObjectKeysEdgeOne(IEnumerable<string> objectKeys) {
       try {
          if (!string.IsNullOrWhiteSpace(_config.cdnRefreshRoot)) {
             Credential cred = new Credential {
@@ -246,18 +246,17 @@ public class TencentCos : IStorageProvider, ICdnRefresh {
             // 实例化要请求产品的client对象,clientProfile是可选的
             TeoClient client = new TeoClient(cred, _config.region, clientProfile);
             // 实例化一个请求对象,每个接口都会对应一个request对象
-            CreatePurgeTaskRequest req = new CreatePurgeTaskRequest() {
-               Type = "purge_url",
-               Method = "delete",
+            CreatePrefetchTaskRequest req = new CreatePrefetchTaskRequest() {
                Targets = objectKeys.Select(a => Path.Combine(_config.cdnRefreshRoot, a).Replace(@"\", "/")).ToArray(),
-               ZoneId = _config.edgeOneZoneId
+               ZoneId = _config.edgeOneZoneId,
+               EncodeUrl = true
             };
 
             if (req.Targets.Length == 0)
                return;
 
             // 返回的resp是一个CreatePurgeTaskResponse的实例，与请求对象对应
-            CreatePurgeTaskResponse resp = await client.CreatePurgeTask(req);
+            var resp = await client.CreatePrefetchTask(req);
             // 输出json格式的字符串回包
             Debug.WriteLine(AbstractModel.ToJsonString(resp));
          }
@@ -266,7 +265,7 @@ public class TencentCos : IStorageProvider, ICdnRefresh {
       }
    }
 
-   public async Task RefreshRootEdgeOne() {
+   private async Task PurgeRootEdgeOne() {
       try {
          if (!string.IsNullOrWhiteSpace(_config.cdnRefreshPath)) {
             Credential cred = new Credential {
@@ -286,7 +285,7 @@ public class TencentCos : IStorageProvider, ICdnRefresh {
             // 实例化一个请求对象,每个接口都会对应一个request对象
             CreatePurgeTaskRequest req = new CreatePurgeTaskRequest() {
                Type = "purge_prefix",
-               Method = "delete",
+               Method = "invalidate",
                Targets = new[] { _config.cdnRefreshPath },
                ZoneId = _config.edgeOneZoneId
             };
@@ -301,17 +300,17 @@ public class TencentCos : IStorageProvider, ICdnRefresh {
       }
    }
 
-   public async Task RefreshObjectKeys(IEnumerable<string> objectKeys) {
+   public async Task CdnPrefetchObjectKeys(IEnumerable<string> objectKeys) {
       if (_config.useEdgeOne)
-         await RefreshObjectKeysEdgeOne(objectKeys);
+         await PrefetchObjectKeysEdgeOne(objectKeys);
       else
-         await RefreshObjectKeysCdn(objectKeys);
+         await PrefetchObjectKeysCdn(objectKeys);
    }
 
-   public async Task RefreshRoot() {
+   public async Task CdnPurgePath() {
       if (_config.useEdgeOne)
-         await RefreshRootEdgeOne();
+         await PurgeRootEdgeOne();
       else
-         await RefreshRootCdn();
+         await PurgeRootCdn();
    }
 }

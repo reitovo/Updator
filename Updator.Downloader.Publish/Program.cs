@@ -17,6 +17,7 @@ using Uploader.StorageProvider;
 using Meta = Updator.Common.Downloader.Meta;
 
 Console.OutputEncoding = Encoding.UTF8;
+var objectKeys = new List<string>();
 
 var parsed = new Parser(a => {
    a.AllowMultiInstance = true;
@@ -118,10 +119,12 @@ async Task Upload(string name, byte[] data) {
    Console.WriteLine($@"Upload Tencent Cos {name}");
    await using var ms = new MemoryStream(data);
    await storage.UploadAsync(name, ms);
+   objectKeys.Add(name);
 }
 
 Console.WriteLine(@"Refresh CDN");
-await storage.RefreshRoot();
+await storage.CdnPurgePath();
+await storage.CdnPrefetchObjectKeys(objectKeys);
 
 Console.WriteLine(@"Done Tencent Cos");
 return 0;

@@ -282,8 +282,8 @@ logger.LogInformation("Uploaded storage description");
 if (storage is ICdnRefresh cdn)
 {
     logger.LogInformation("Refresh CDN");
-    await cdn.RefreshObjectKeys(uploadedObjectKeys);
-    await cdn.RefreshRoot();
+    await cdn.CdnPurgePath();
+    await cdn.CdnPrefetchObjectKeys(uploadedObjectKeys);
 }
 
 logger.LogInformation("Done");
