@@ -13,6 +13,7 @@ using TencentCloud.Common;
 using TencentCloud.Common.Profile;
 using TencentCloud.Teo.V20220901;
 using TencentCloud.Teo.V20220901.Models;
+using DescribePurgeTasksRequest = TencentCloud.Teo.V20220901.Models.DescribePurgeTasksRequest;
 using Task = System.Threading.Tasks.Task;
 
 namespace Uploader.StorageProvider;
@@ -259,6 +260,22 @@ public class TencentCos : IStorageProvider, ICdnRefresh {
             var resp = await client.CreatePrefetchTask(req);
             // 输出json格式的字符串回包
             Debug.WriteLine(AbstractModel.ToJsonString(resp));
+
+            var cts = new CancellationTokenSource(TimeSpan.FromMinutes(3));
+            var reqQuery = new DescribePrefetchTasksRequest() {
+               Filters = [new AdvancedFilter { Name = "job-id", Values = [resp.JobId] }]
+            };
+            while (!cts.IsCancellationRequested) {
+               var respQuery = await client.DescribePrefetchTasks(reqQuery);
+               // 输出json格式的字符串回包
+               Debug.WriteLine(AbstractModel.ToJsonString(respQuery));
+               if (respQuery.Tasks is { Length: > 0 }) {
+                  var task = respQuery.Tasks[0];
+                  if (task.Status == "success") {
+                     break;
+                  }
+               }
+            }
          }
       } catch (Exception ex) {
          Debug.WriteLine(ex);
@@ -294,6 +311,22 @@ public class TencentCos : IStorageProvider, ICdnRefresh {
             CreatePurgeTaskResponse resp = await client.CreatePurgeTask(req);
             // 输出json格式的字符串回包
             Debug.WriteLine(AbstractModel.ToJsonString(resp));
+
+            var cts = new CancellationTokenSource(TimeSpan.FromMinutes(3));
+            var reqQuery = new DescribePurgeTasksRequest() {
+               Filters = [new AdvancedFilter { Name = "job-id", Values = [resp.JobId] }]
+            };
+            while (!cts.IsCancellationRequested) {
+               var respQuery = await client.DescribePurgeTasks(reqQuery);
+               // 输出json格式的字符串回包
+               Debug.WriteLine(AbstractModel.ToJsonString(respQuery));
+               if (respQuery.Tasks is { Length: > 0 }) {
+                  var task = respQuery.Tasks[0];
+                  if (task.Status == "success") {
+                     break;
+                  }
+               }
+            }
          }
       } catch (Exception ex) {
          Debug.WriteLine(ex);

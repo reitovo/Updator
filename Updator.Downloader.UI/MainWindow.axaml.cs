@@ -134,6 +134,11 @@ public partial class MainWindow : Window {
       try {
          // Default downloader self-update url.
          var downloaderUrl = "https://dist.reito.fun/downloader";
+         using var http = new HttpClient(new SocketsHttpHandler() {
+            ConnectTimeout = TimeSpan.FromSeconds(10)
+         });
+         http.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent",
+            $"Updator.Downloader.UI/{Meta.RuntimeString}/{Meta.RuntimeVersion}");
 
          if (OperatingSystem.IsMacOS()) {
             var pwd = Process.GetCurrentProcess().MainModule?.FileName;
@@ -191,9 +196,6 @@ public partial class MainWindow : Window {
 
          var latestDownloaderVersion = 0;
          try {
-            using var http = new HttpClient(new SocketsHttpHandler() {
-               ConnectTimeout = TimeSpan.FromSeconds(10)
-            });
             if (int.TryParse(await http.GetStringAsync(Path.Combine(downloaderUrl, $"{Meta.RuntimeString}-build-id")), out var v)) {
                latestDownloaderVersion = v;
             }
@@ -228,9 +230,6 @@ public partial class MainWindow : Window {
                App.AppLog.LogInformation($"执行更新");
                SetJobName(Strings.UpdateDownloader);
 
-               using var http = new HttpClient(new SocketsHttpHandler() {
-                  ConnectTimeout = TimeSpan.FromSeconds(10)
-               });
                var signature = await http.GetByteArrayAsync(Path.Combine(downloaderUrl, $"ui-{Meta.RuntimeString}.sha512"));
 
                // Download with progress
@@ -326,10 +325,6 @@ public partial class MainWindow : Window {
             try {
                SetJobName(Strings.UpdateSourcesJson);
 
-               using var http = new HttpClient(new SocketsHttpHandler() {
-                  ConnectTimeout = TimeSpan.FromSeconds(10)
-               });
-
                App.AppLog.LogInformation($"请求新软件源");
                var newSources = await http.GetByteArrayAsync(sources.sourcesUrl);
                SetProgressBar(80);
@@ -398,9 +393,6 @@ public partial class MainWindow : Window {
 
          // Download description file for the distribution.
          try {
-            using var http = new HttpClient(new SocketsHttpHandler() {
-               ConnectTimeout = TimeSpan.FromSeconds(10)
-            });
             var descBytes = await http.GetByteArrayAsync(Path.Combine(source.distributionUrl, "__description.json"));
             SetProgressBar(80);
 
@@ -495,11 +487,6 @@ public partial class MainWindow : Window {
          // Compare checksum and download if mismatch.
          // Use parallel to speed up.
          var cts = new CancellationTokenSource();
-         using var downloadClient = new HttpClient(new SocketsHttpHandler() {
-            ConnectTimeout = TimeSpan.FromSeconds(10)
-         });
-         downloadClient.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent",
-            $"Updator.Downloader.UI/{Meta.RuntimeString}/{Meta.RuntimeVersion}");
          await Parallel.ForEachAsync(desc.files, new ParallelOptions() {
             MaxDegreeOfParallelism = Environment.ProcessorCount,
             CancellationToken = cts.Token
@@ -531,7 +518,7 @@ public partial class MainWindow : Window {
                var retryCount = 0;
                while (true) {
                   try {
-                     var b = await downloadClient.GetByteArrayAsync(Path.Combine(source.distributionUrl, f.objectKey), ct);
+                     var b = await http.GetByteArrayAsync(Path.Combine(source.distributionUrl, f.objectKey), ct);
                      using var ms = new MemoryStream(b);
                      ms.Position = 0;
                      var c = await check.CalculateChecksum(ms);
