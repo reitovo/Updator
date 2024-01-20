@@ -1,7 +1,7 @@
 {
   "version": 11,
   "sourcesUrl": "https://dist.reito.fun/vtslink/sources.json",
-  "customDownloaderUrl": "https://direct.dist.reito.fun/downloader",
+  "customDownloaderUrl": "https://dist.reito.fun/downloader",
   "defaultSourceId": "action",
   "defaultName": "VLink联动",
   "sources": [ 

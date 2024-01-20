@@ -34,7 +34,7 @@ jobs:
 
       - name: Upload
         run: |
-          dotnet Updator.Downloader.Publish.dll --legacy true --config ${{ secrets.PUBLISHER_CONFIG }} --os win --path "${{ github.workspace }}/win/Updator.Downloader.UI.exe"
+          dotnet Updator.Downloader.Publish.dll --legacy false --config ${{ secrets.PUBLISHER_CONFIG }} --os win --path "${{ github.workspace }}/win/Updator.Downloader.UI.exe"
         working-directory: ${{ github.workspace }}/publisher 
 
       - name: Upload Artifacts
