@@ -190,5 +190,5 @@ jobs:
 
       - name: Upload
         run: |
-          dotnet Updator.Birth.dll --cos ${{ secrets.COS_CONFIG }} --path "${{ github.workspace }}/code/Updator.Birth/birth"
+          dotnet Updator.Birth.dll --cos ${{ secrets.BIRTH_CONFIG }} --path "${{ github.workspace }}/code/Updator.Birth/birth"
         working-directory: ${{ github.workspace }}/birth 
