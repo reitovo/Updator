@@ -6,4 +6,5 @@ riderModule.iml
 .vs/
 .git/
 .idea/ 
-/Updator.Downloader.Publish/config.json
+/Updator.Downloader.Publish/config.json 
+/Updator.Birth/config.json
