@@ -166,6 +166,8 @@ public partial class MainWindow : Window {
                 if (first != null) {
                     sourcesPath = first.Path.LocalPath;
                     Environment.CurrentDirectory = Path.GetDirectoryName(sourcesPath)!;
+                } else { 
+                    Dispatcher.UIThread.InvokeShutdown();
                 }
             }
 
