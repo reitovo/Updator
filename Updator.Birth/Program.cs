@@ -30,12 +30,6 @@ if (parsed.Value == null) {
 }
 var opt = parsed.Value;
 
-// Get projects root from args[0]
-var birthDir = opt.BirthRoot;
-
-var config = await JsonSerializer.DeserializeAsync<BirthConfig>(
-   new MemoryStream(File.ReadAllBytes(Path.Combine(birthDir, "birth.json"))));
-
 if (string.IsNullOrWhiteSpace(opt.Cos)) {
    return -1;
 }
@@ -44,6 +38,13 @@ if (string.IsNullOrWhiteSpace(opt.Cos)) {
 var cosConfig = await JsonSerializer.DeserializeAsync<TencentCosConfig>(
    new MemoryStream(Convert.FromBase64String(opt.Cos)));
 var storage = new TencentCos(cosConfig);
+
+// Get projects root from args[0]
+var birthDir = opt.BirthRoot;
+
+var config = await JsonSerializer.DeserializeAsync<BirthConfig>(
+   new MemoryStream(File.ReadAllBytes(Path.Combine(birthDir, "birth.json"))));
+
 
 async Task<byte[]> DecompressBrotli(byte[] data) {
    using var decompressed = new MemoryStream();

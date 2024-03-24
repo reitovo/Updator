@@ -20,7 +20,7 @@ jobs:
           path: code
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8'
 
@@ -38,7 +38,7 @@ jobs:
         working-directory: ${{ github.workspace }}/publisher 
 
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: win
           path: "${{ github.workspace }}/win/Updator.Downloader.UI.exe"
@@ -54,7 +54,7 @@ jobs:
           path: code
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8' 
 
@@ -72,7 +72,7 @@ jobs:
         working-directory: ${{ github.workspace }}/publisher 
 
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: linux
           path: "${{ github.workspace }}/linux/Updator.Downloader.UI"
@@ -91,7 +91,7 @@ jobs:
           path: code
           
       - name: Setup .NET  
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8' 
       
@@ -159,7 +159,7 @@ jobs:
         working-directory: ${{ github.workspace }}/publisher 
           
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: osx
           path: "${{ github.workspace }}/${{ env.APP_PACKAGE_ZIP }}"
@@ -180,7 +180,7 @@ jobs:
           path: code
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8' 
 
