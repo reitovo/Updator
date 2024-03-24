@@ -134,7 +134,8 @@ public partial class MainWindow : Window {
             });
             http.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent",
                 $"Updator.Downloader.UI/{Meta.RuntimeString}/{Meta.RuntimeVersion}");
-            http.DefaultRequestVersion = HttpVersion.Version20;
+            http.DefaultRequestVersion = HttpVersion.Version11;
+            http.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrHigher;
 
             if (OperatingSystem.IsMacOS()) {
                 var pwd = Process.GetCurrentProcess().MainModule?.FileName;
@@ -166,7 +167,7 @@ public partial class MainWindow : Window {
                 if (first != null) {
                     sourcesPath = first.Path.LocalPath;
                     Environment.CurrentDirectory = Path.GetDirectoryName(sourcesPath)!;
-                } else { 
+                } else {
                     Dispatcher.UIThread.InvokeShutdown();
                 }
             }
