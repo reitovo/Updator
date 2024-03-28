@@ -129,9 +129,10 @@ public partial class MainWindow : Window {
         try {
             // Default downloader self-update url.
             var downloaderUrl = "https://dist.reito.fun/downloader";
-            using var http = new HttpClient(new SocketsHttpHandler() {
-                ConnectTimeout = TimeSpan.FromSeconds(10)
-            });
+            var handler = new SocketsHttpHandler() {
+                ConnectTimeout = TimeSpan.FromSeconds(60)
+            };
+            using var http = new HttpClient(handler);
             http.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent",
                 $"Updator.Downloader.UI/{Meta.RuntimeString}/{Meta.RuntimeVersion}");
             http.DefaultRequestVersion = HttpVersion.Version11;
@@ -476,6 +477,7 @@ public partial class MainWindow : Window {
             }
 
             App.AppLog.LogInformation($"执行更新");
+            handler.ConnectTimeout = TimeSpan.FromSeconds(10);
 
             // Compare checksum and download if mismatch.
             // Use parallel to speed up.
