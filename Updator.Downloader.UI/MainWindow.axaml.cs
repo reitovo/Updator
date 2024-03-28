@@ -477,7 +477,6 @@ public partial class MainWindow : Window {
             }
 
             App.AppLog.LogInformation($"执行更新");
-            handler.ConnectTimeout = TimeSpan.FromSeconds(10);
 
             // Compare checksum and download if mismatch.
             // Use parallel to speed up.
