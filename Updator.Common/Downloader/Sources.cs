@@ -1,9 +1,6 @@
-﻿using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Text.Json.Serialization.Metadata;
-using Updator.Common;
+﻿using System.Text.Json.Serialization;
 
-namespace Updator.Downloader.CLI;
+namespace Updator.Common.Downloader;
 
 public class Source {
    public string id { get; set; }

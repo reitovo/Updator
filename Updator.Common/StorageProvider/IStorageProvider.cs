@@ -1,7 +1,4 @@
-﻿using Updator.Common.ChecksumProvider;
-using Updator.Common.CompressionProvider;
-
-namespace Uploader.StorageProvider;
+﻿namespace Updator.Common.StorageProvider;
 
 // Basic ability of an storage provider
 public interface IStorageProvider {

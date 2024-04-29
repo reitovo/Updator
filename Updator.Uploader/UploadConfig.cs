@@ -1,7 +1,7 @@
 ﻿using Updator.Common;
-using Uploader.StorageProvider;
+using Updator.Common.StorageProvider;
 
-namespace Uploader;
+namespace Updator.Uploader;
 
 public class UploadConfig {
    // The project name, display at user side.
@@ -36,6 +36,8 @@ public class UploadConfig {
    public string storage { get; set; } = "cos";
    // tencent cos config ("cos")
    public TencentCosConfig cos { get; set; }
+   // azure storage blobs config ("azure")
+   public AzureBlobsConfig azure { get; set; }
 
    // pass build id to executable as argument --<passBuildId>
    public string passBuildId { get; set; }

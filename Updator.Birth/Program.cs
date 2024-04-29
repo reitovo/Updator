@@ -1,21 +1,12 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
-using System.Collections.Concurrent;
-using System.Diagnostics;
-using System.IO.Compression;
-using System.Net;
-using System.Net.Http.Headers;
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using CommandLine;
-using ICSharpCode.SharpZipLib.Checksum;
 using ICSharpCode.SharpZipLib.Zip;
 using Updator.Birth;
 using Updator.Common.CompressionProvider;
-using Updator.Common.Downloader;
-using Updator.Downloader.CLI;
-using Uploader.StorageProvider;
+using Updator.Common.StorageProvider;
 using Crc32 = System.IO.Hashing.Crc32;
 using ZipFile = ICSharpCode.SharpZipLib.Zip.ZipFile;
 
@@ -149,22 +140,24 @@ await storage.CdnPrefetchObjectKeys(objectKeys);
 Console.WriteLine(@"Done Tencent Cos");
 return 0;
 
-class MemoryDataSource : IStaticDataSource {
-   private readonly MemoryStream _ms;
+namespace Updator.Birth {
+   class MemoryDataSource : IStaticDataSource {
+      private readonly MemoryStream _ms;
 
-   public MemoryDataSource(byte[] b) {
-      _ms = new MemoryStream(b);
+      public MemoryDataSource(byte[] b) {
+         _ms = new MemoryStream(b);
+      }
+
+      public Stream GetSource() {
+         return _ms;
+      }
    }
 
-   public Stream GetSource() {
-      return _ms;
+
+   file class Options {
+      [Option("cos", Required = false)]
+      public string Cos { get; set; }
+      [Option("path", Required = false)]
+      public string BirthRoot { get; set; }
    }
-}
-
-
-file class Options {
-   [Option("cos", Required = false)]
-   public string Cos { get; set; }
-   [Option("path", Required = false)]
-   public string BirthRoot { get; set; }
 }

@@ -1,19 +1,12 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
-using System.Collections.Concurrent;
-using System.Diagnostics;
-using System.IO.Compression;
-using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using CommandLine;
-using Octokit;
-using Octokit.Internal;
 using Updator.Common.CompressionProvider;
-using Updator.Downloader.CLI;
+using Updator.Common.StorageProvider;
 using Updator.Downloader.Publish;
-using Uploader.StorageProvider;
 using Meta = Updator.Common.Downloader.Meta;
 
 Console.OutputEncoding = Encoding.UTF8;
@@ -129,13 +122,15 @@ await storage.CdnPrefetchObjectKeys(objectKeys);
 Console.WriteLine(@"Done Tencent Cos");
 return 0;
 
-file class Options {
-   [Option("os", Required = false)]
-   public string Os { get; set; }
-   [Option("path", Required = false)]
-   public string Path { get; set; }
-   [Option("config", Required = false)]
-   public string Config { get; set; }
-   [Option("legacy", Required = false)]
-   public bool Legacy { get; set; }
+namespace Updator.Downloader.Publish {
+   file class Options {
+      [Option("os", Required = false)]
+      public string Os { get; set; }
+      [Option("path", Required = false)]
+      public string Path { get; set; }
+      [Option("config", Required = false)]
+      public string Config { get; set; }
+      [Option("legacy", Required = false)]
+      public bool Legacy { get; set; }
+   }
 }

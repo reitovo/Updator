@@ -1,4 +1,4 @@
-﻿namespace Uploader.StorageProvider; 
+﻿namespace Updator.Common.StorageProvider; 
 
 // Declares the provider can refresh CDN
 public interface ICdnRefresh { 

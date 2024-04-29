@@ -1,6 +1,4 @@
-﻿using Uploader.StorageProvider;
-
-namespace Updator.Birth;
+﻿namespace Updator.Birth;
 
 public class BirthProject {
    public string name { get; set; }

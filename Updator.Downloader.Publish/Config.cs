@@ -1,4 +1,4 @@
-﻿using Uploader.StorageProvider;
+﻿using Updator.Common.StorageProvider;
 
 namespace Updator.Downloader.Publish;
 

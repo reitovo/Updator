@@ -25,7 +25,8 @@ using Updator.Common;
 using Updator.Common.ChecksumProvider;
 using Updator.Common.CompressionProvider;
 using Updator.Common.Downloader;
-using Updator.Downloader.CLI;
+using DistDescriptionSerializer = Updator.Common.Downloader.DistDescriptionSerializer;
+using SourcesSerializer = Updator.Common.Downloader.SourcesSerializer;
 
 namespace Updator.Downloader.UI;
 
@@ -419,7 +420,8 @@ public partial class MainWindow : Window {
 
             // Restore checksum provider
             IChecksumProvider check = desc.checksum switch {
-                "crc64" => new Crc64(),
+                "crc64" => new ChecksumCosCrc64(),
+                "azure-md5" => new ChecksumAzureMd5(),
                 _ => null
             };
 

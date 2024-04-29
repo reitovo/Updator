@@ -13,6 +13,8 @@ using Updator.Common.CompressionProvider;
 using Updator.Common.Downloader;
 using Updator.Downloader;
 using Updator.Downloader.CLI;
+using DistDescriptionSerializer = Updator.Common.Downloader.DistDescriptionSerializer;
+using SourcesSerializer = Updator.Common.Downloader.SourcesSerializer;
 
 void Exec(string cmd) {
    var escapedArgs = cmd.Replace("\"", "\\\"");
@@ -333,7 +335,7 @@ await AnsiConsole.Progress()
 
       // Restore checksum provider
       IChecksumProvider check = desc.checksum switch {
-         "crc64" => new Crc64(),
+         "crc64" => new ChecksumCosCrc64(),
          _ => null
       };
       if (check == null) {

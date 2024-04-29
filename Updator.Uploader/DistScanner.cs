@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 
-namespace Uploader;
+namespace Updator.Uploader;
 
 public class DistItem {
    public FileInfo fileInfo;

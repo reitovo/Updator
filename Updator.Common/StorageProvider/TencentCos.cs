@@ -1,12 +1,7 @@
 ﻿using System.Diagnostics;
-using System.IO.Compression;
 using COSXML;
 using COSXML.Auth;
 using COSXML.Model.Object;
-using COSXML.Utils;
-using Updator.Common;
-using Updator.Common.CompressionProvider;
-using System;
 using TencentCloud.Cdn.V20180606;
 using TencentCloud.Cdn.V20180606.Models;
 using TencentCloud.Common;
@@ -16,7 +11,7 @@ using TencentCloud.Teo.V20220901.Models;
 using DescribePurgeTasksRequest = TencentCloud.Teo.V20220901.Models.DescribePurgeTasksRequest;
 using Task = System.Threading.Tasks.Task;
 
-namespace Uploader.StorageProvider;
+namespace Updator.Common.StorageProvider;
 
 // Config reads from config.json
 public class TencentCosConfig {
