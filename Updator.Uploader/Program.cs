@@ -162,7 +162,9 @@ if (storageDesc.Length != 0) {
 // Upload files concurrently.
 ConcurrentBag<string> uploadedObjectKeys = new();
 ConcurrentBag<DistFile> descFiles = new();
-await Parallel.ForEachAsync(root.Items, async (item, _) => {
+await Parallel.ForEachAsync(root.Items, new ParallelOptions {
+    MaxDegreeOfParallelism = 64
+}, async (item, _) => {
     using var ms = new MemoryStream();
     var fs = item.fileInfo.OpenRead();
     await compress.Compress(fs, ms);
