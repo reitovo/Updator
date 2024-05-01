@@ -69,7 +69,8 @@ An example:
 One can extend the ability of this app by adding providers to `StorageProvider`, `CompressionProvider`, `ChecksumProvider`.
 
 Currently supported providers:
-- `cos`: Tencent cloud COS, also support refreshing CDN if you use such service. 
+- `cos`: Tencent cloud COS, also support refreshing CDN if you use such service.
+- `azure-blobs`: Azure Storage Blobs，support Front Door Endpoint refresh.
 
 ## Downloader
 It reads `sources.json` to download from specified url. Then downloads the `<DISTRIBUTION-URL>/__description.json` to get all metadata about the distribution, compare and download all files needed.

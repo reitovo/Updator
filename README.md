@@ -89,7 +89,8 @@
 通过开发新的 `StorageProvider`, `CompressionProvider`, `ChecksumProvider`，可以很快的集成其他云服务到本项目 
 
 当前支持的云服务：
-- `cos`: 腾讯云COS，支持CDN刷新
+- `cos`: 腾讯云 COS，支持 CDN 刷新
+- `azure-blobs`: Azure Storage Blobs，支持 Front Door Endpoint 刷新
 
 ## Downloader 
 程序读取 `sources.json` 去下载你的应用。
