@@ -37,17 +37,17 @@ public class AzureBlobsConfig {
 }
 
 public class AzureBlobs : IStorageProvider, ICdnRefresh {
-    private BlobServiceClient _client;
-    private BlobContainerClient _container;
-    private string _prefix;
+    private readonly BlobServiceClient _client;
+    private readonly BlobContainerClient _container;
+    private readonly string _prefix;
 
-    private ArmClient _armClient;
-    private ProfileResource _profile;
-    private FrontDoorEndpointResource _endpoint;
+    private readonly ArmClient _armClient;
+    private readonly FrontDoorEndpointResource _endpoint;
 
     public AzureBlobs(AzureBlobsConfig config) {
         _client = new BlobServiceClient(config.connectionString);
         _container = _client.GetBlobContainerClient(config.blobContainer);
+
         _prefix = config.objectKeyPrefix;
 
         if (config.azureCredential != null) {
@@ -96,13 +96,13 @@ public class AzureBlobs : IStorageProvider, ICdnRefresh {
         if (_endpoint == null)
             return;
 
-        await _endpoint.PurgeContentAsync(WaitUntil.Completed, new FrontDoorPurgeContent(objectKeys.Select(a => $"/{a}")));
+        await _endpoint.PurgeContentAsync(WaitUntil.Completed, new FrontDoorPurgeContent(objectKeys.Select(a => $"/{_container.Name}/{_prefix}{a}")));
     }
 
     public async Task CdnPurgePath() {
         if (_endpoint == null)
             return;
 
-        await _endpoint.PurgeContentAsync(WaitUntil.Completed, new FrontDoorPurgeContent([$"/{_prefix}*"]));
+        await _endpoint.PurgeContentAsync(WaitUntil.Completed, new FrontDoorPurgeContent([$"/{_container.Name}/{_prefix}*"]));
     }
 }

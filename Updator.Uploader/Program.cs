@@ -247,8 +247,8 @@ logger.LogInformation("Uploaded storage description");
 // Refresh CDN if provider has such interface
 if (storage is ICdnRefresh cdn) {
     logger.LogInformation("Refresh CDN");
-    await cdn.CdnPrefetchObjectKeys(uploadedObjectKeys);
-    // await cdn.CdnPurgePath();
+    // await cdn.CdnPrefetchObjectKeys(uploadedObjectKeys);
+    await cdn.CdnPurgePath();
 }
 
 logger.LogInformation("Done");
