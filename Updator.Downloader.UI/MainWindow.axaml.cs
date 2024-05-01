@@ -14,6 +14,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using AsyncImageLoader.Loaders;
 using Avalonia.Controls;
+using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Microsoft.Extensions.Logging;
@@ -38,17 +39,16 @@ public partial class MainWindow : Window {
 
     protected override void OnClosing(WindowClosingEventArgs e) {
         base.OnClosing(e);
-
-        Task.Run(async () => {
-            await Task.Delay(TimeSpan.FromSeconds(3));
-            Environment.Exit(0);
-            await Task.Delay(TimeSpan.FromSeconds(2));
-            Process.GetCurrentProcess().Kill();
-        });
+        EnsureKillSelfExit();
+        EnsureKillSelfProcess();
     }
 
     protected override void OnOpened(EventArgs e) {
         base.OnOpened(e);
+
+        Dispatcher.UIThread.ShutdownStarted += (_, _) => EnsureKillSelfExit();
+        Dispatcher.UIThread.ShutdownStarted += (_, _) => EnsureKillSelfProcess();
+
         try {
             AppIcon.Loader = new DiskCachedWebImageLoader(Path.Combine(App.AppLocalDataFolder, "cache/image"));
             AppVersion.Content = Strings.LoadingVersion;
@@ -59,6 +59,16 @@ public partial class MainWindow : Window {
         } catch (Exception ex) {
             App.AppLog.LogError(ex, "错误");
         }
+    }
+
+    private async void EnsureKillSelfExit() {
+        await Task.Delay(TimeSpan.FromSeconds(3));
+        Environment.Exit(0);
+    }
+
+    private async void EnsureKillSelfProcess() {
+        await Task.Delay(TimeSpan.FromSeconds(5));
+        Process.GetCurrentProcess().Kill();
     }
 
     private string EscapeCommand(string cmd) {
