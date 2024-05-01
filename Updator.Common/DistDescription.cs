@@ -4,7 +4,7 @@ public class DistFile {
     // The object key (relative path) of file
     public string objectKey { get; set; }
 
-    // The checksum of file
+    // The checksum of compressed file
     public string checksum { get; set; }
 
     // The file's size after compression
@@ -12,6 +12,9 @@ public class DistFile {
 
     // The file's original size
     public long fileSize { get; set; }
+
+    // The checksum of raw file
+    public string fileChecksum { get; set; }
 }
 
 public class DistUpdateLog {

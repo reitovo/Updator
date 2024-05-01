@@ -37,12 +37,6 @@ public partial class MainWindow : Window {
         InitializeComponent();
     }
 
-    protected override void OnClosing(WindowClosingEventArgs e) {
-        base.OnClosing(e);
-        EnsureKillSelfExit();
-        EnsureKillSelfProcess();
-    }
-
     protected override void OnOpened(EventArgs e) {
         base.OnOpened(e);
 
@@ -59,6 +53,12 @@ public partial class MainWindow : Window {
         } catch (Exception ex) {
             App.AppLog.LogError(ex, "错误");
         }
+    }
+
+    protected override void OnClosing(WindowClosingEventArgs e) {
+        base.OnClosing(e);
+        EnsureKillSelfExit();
+        EnsureKillSelfProcess();
     }
 
     private async void EnsureKillSelfExit() {
@@ -533,15 +533,21 @@ public partial class MainWindow : Window {
                 if (!fullPath.Exists) {
                     download = true;
                 } else {
-                    using var ms = new MemoryStream();
-                    var fs = fullPath.OpenRead();
-                    await compress.Compress(fs, ms);
-                    await fs.DisposeAsync();
-                    fs.Close();
-                    ms.Position = 0;
-                    var checksum = await check.CalculateChecksum(ms);
-                    if (checksum != f.checksum) {
-                        download = true;
+                    if (string.IsNullOrWhiteSpace(f.fileChecksum)) {
+                        using var ms = new MemoryStream();
+                        await using var fs = fullPath.OpenRead();
+                        await compress.Compress(fs, ms);
+                        ms.Position = 0;
+                        var checksum = await check.CalculateChecksum(ms);
+                        if (checksum != f.checksum) {
+                            download = true;
+                        }
+                    } else {
+                        await using var fs = fullPath.OpenRead();
+                        var checksum = await check.CalculateChecksum(fs);
+                        if (checksum != f.fileChecksum) {
+                            download = true;
+                        }
                     }
                 }
 

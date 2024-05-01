@@ -166,13 +166,16 @@ await Parallel.ForEachAsync(root.Items, async (item, _) => {
     using var ms = new MemoryStream();
     var fs = item.fileInfo.OpenRead();
     await compress.Compress(fs, ms);
-    await fs.DisposeAsync();
-    fs.Close();
     ms.Position = 0;
     var checksum = await check.CalculateChecksum(ms);
+    fs.Position = 0;
+    var fileChecksum = await check.CalculateChecksum(fs);
+    await fs.DisposeAsync();
+    fs.Close();
 
     descFiles.Add(new() {
         checksum = checksum,
+        fileChecksum = fileChecksum,
         objectKey = item.storageObjectKey,
         fileSize = item.fileInfo.Length,
         downloadSize = ms.Length
