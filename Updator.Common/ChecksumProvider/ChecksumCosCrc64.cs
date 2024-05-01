@@ -19,4 +19,22 @@ public class ChecksumCosCrc64 : IChecksumProvider {
 
         return crc1.ToString();
     }
+
+    class StreamChecksum : IStreamChecksum {
+        private ulong state = 0;
+
+        public Task<string> GetChecksum() {
+            return Task.FromResult(state.ToString());
+        }
+
+        public Task ProcessBlock(byte[] bytes, int count) {
+            ulong crc = CosCrc64.Compute(bytes, 0, count);
+            state = state != 0UL ? CosCrc64.Combine(state, crc, count) : crc;
+            return Task.CompletedTask;
+        }
+    }
+
+    public IStreamChecksum CreateStreamChecksum() {
+        return new StreamChecksum();
+    }
 }

@@ -173,7 +173,9 @@ await Parallel.ForEachAsync(root.Items, async (item, _) => {
 
     descFiles.Add(new() {
         checksum = checksum,
-        objectKey = item.storageObjectKey
+        objectKey = item.storageObjectKey,
+        fileSize = item.fileInfo.Length,
+        downloadSize = ms.Length
     });
 
     var upload = false;

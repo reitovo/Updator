@@ -25,6 +25,7 @@ using Updator.Common;
 using Updator.Common.ChecksumProvider;
 using Updator.Common.CompressionProvider;
 using Updator.Common.Downloader;
+using Updator.Common.Utils;
 using DistDescriptionSerializer = Updator.Common.Downloader.DistDescriptionSerializer;
 using SourcesSerializer = Updator.Common.Downloader.SourcesSerializer;
 
@@ -33,6 +34,17 @@ namespace Updator.Downloader.UI;
 public partial class MainWindow : Window {
     public MainWindow() {
         InitializeComponent();
+    }
+
+    protected override void OnClosing(WindowClosingEventArgs e) {
+        base.OnClosing(e);
+
+        Task.Run(async () => {
+            await Task.Delay(TimeSpan.FromSeconds(3));
+            Environment.Exit(0);
+            await Task.Delay(TimeSpan.FromSeconds(2));
+            Process.GetCurrentProcess().Kill();
+        });
     }
 
     protected override void OnOpened(EventArgs e) {
@@ -118,8 +130,25 @@ public partial class MainWindow : Window {
         return sourceCandidate.First();
     }
 
+    private long downloadProgress = 0L;
+
+    void ResetProgressBar() {
+        downloadProgress = 0;
+        Dispatcher.UIThread.Invoke(() => { JobProgress.Value = 0; });
+    }
+
     void SetProgressBar(double value) {
         Dispatcher.UIThread.Invoke(() => { JobProgress.Value = value; });
+    }
+
+    void SetProgressBarMax(double value) {
+        Dispatcher.UIThread.Invoke(() => { JobProgress.Maximum = value; });
+        ResetProgressBar();
+    }
+
+    void IncrementProgressBar(double value) {
+        var val = Interlocked.Add(ref downloadProgress, (long)value);
+        SetProgressBar(val);
     }
 
     void SetJobName(string name) {
@@ -239,7 +268,7 @@ public partial class MainWindow : Window {
                         HttpCompletionOption.ResponseHeadersRead);
                     var len = resp.Content.Headers.ContentLength!.Value;
 
-                    Dispatcher.UIThread.Invoke(() => { JobProgress.Maximum = len; });
+                    SetProgressBarMax(len);
 
                     var ss = await resp.Content.ReadAsStreamAsync();
                     var ms = new MemoryStream();
@@ -284,24 +313,22 @@ public partial class MainWindow : Window {
                             Exec($"rm -f '{file}'");
                         } else if (OperatingSystem.IsLinux()) {
                             var name = Path.GetFileNameWithoutExtension(Environment.ProcessPath)!;
-                            name = Regex.Replace(name, @"\(\d+\)", string.Empty);
-                            var file = $"{name}({latestDownloaderVersion})";
+                            var file = Path.GetTempFileName();
                             await File.WriteAllBytesAsync(file, payload);
                             Exec($"chmod +x '{file}'");
                             Process.Start(new ProcessStartInfo() {
                                 FileName = file,
                                 CreateNoWindow = false,
-                                Arguments = $"--delete \"{Environment.ProcessPath}\""
+                                Arguments = $"--updateSelf --programPath \"{Environment.ProcessPath}\" --programName \"{name}\""
                             });
                         } else {
                             var name = Path.GetFileNameWithoutExtension(Environment.ProcessPath)!;
-                            name = Regex.Replace(name, @"\(\d+\)", string.Empty);
-                            var file = $"{name}({latestDownloaderVersion}).exe";
+                            var file = Path.ChangeExtension(Path.GetTempFileName(), "exe");
                             await File.WriteAllBytesAsync(file, payload);
                             Process.Start(new ProcessStartInfo() {
                                 FileName = file,
                                 CreateNoWindow = false,
-                                Arguments = $"--delete \"{Environment.ProcessPath}\""
+                                Arguments = $"--updateSelf --programPath \"{Environment.ProcessPath}\" --programName \"{name}\""
                             });
                         }
 
@@ -440,10 +467,11 @@ public partial class MainWindow : Window {
                 Directory.CreateDirectory(distRoot);
             }
 
-            Dispatcher.UIThread.Invoke(() => { JobProgress.Maximum = desc.files.Count; });
+            var totalDownloadSize = desc.files.Sum(a => a.downloadSize);
+            var legacyDownloadProgress = totalDownloadSize == 0;
+            SetProgressBarMax(legacyDownloadProgress ? desc.files.Count : totalDownloadSize);
 
             var displayUpdateLog = false;
-
             App.AppLog.LogInformation($"合并历史描述");
 
             // If there's an old description file, and have update logs
@@ -474,17 +502,13 @@ public partial class MainWindow : Window {
                 }
             }
 
-            void IncrementProgressBar(double value) {
-                Dispatcher.UIThread.Invoke(() => { JobProgress.Value += value; });
-            }
-
             App.AppLog.LogInformation($"执行更新");
 
             // Compare checksum and download if mismatch.
             // Use parallel to speed up.
             var cts = new CancellationTokenSource();
             await Parallel.ForEachAsync(desc.files, new ParallelOptions() {
-                MaxDegreeOfParallelism = Environment.ProcessorCount,
+                MaxDegreeOfParallelism = 1, // Environment.ProcessorCount,
                 CancellationToken = cts.Token
             }, async (f, ct) => {
                 var fullPath = new FileInfo(Path.Combine(distRoot, f.objectKey));
@@ -514,21 +538,12 @@ public partial class MainWindow : Window {
                     var retryCount = 0;
                     while (true) {
                         try {
-                            var b = await http.GetByteArrayAsync(Path.Combine(source.distributionUrl, f.objectKey), ct);
-                            using var ms = new MemoryStream(b);
-                            ms.Position = 0;
-                            var c = await check.CalculateChecksum(ms);
-                            if (c != f.checksum) {
-                                throw new InvalidDataException("checksum failed");
-                            }
-
-                            ms.Position = 0;
-                            if (fullPath.Exists)
-                                fullPath.Delete();
-                            var fs = fullPath.Create();
-                            await compress.Decompress(ms, fs);
-                            await fs.DisposeAsync();
-                            fs.Close();
+                            await http.DownloadAsync(Path.Combine(source.distributionUrl, f.objectKey), fullPath, check, f.checksum, compress, ct,
+                                tuple => {
+                                    if (!legacyDownloadProgress) {
+                                        IncrementProgressBar(tuple.BlockRead);
+                                    }
+                                });
                             break;
                         } catch (TaskCanceledException) {
                             // ignored
@@ -538,7 +553,7 @@ public partial class MainWindow : Window {
                                 await Task.Delay(TimeSpan.FromSeconds(1), ct);
                             } else {
                                 if (!cts.IsCancellationRequested) {
-                                    cts.Cancel();
+                                    await cts.CancelAsync();
                                     Popup.Exception(Strings.DownloadFileFailed, ex);
                                 }
 
@@ -546,9 +561,13 @@ public partial class MainWindow : Window {
                             }
                         }
                     }
+                } else {
+                    IncrementProgressBar(f.downloadSize);
                 }
 
-                IncrementProgressBar(1);
+                if (legacyDownloadProgress) {
+                    IncrementProgressBar(1);
+                }
             });
 
             if (cts.IsCancellationRequested) {
