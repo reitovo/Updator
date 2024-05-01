@@ -319,7 +319,8 @@ public partial class MainWindow : Window {
                             Process.Start(new ProcessStartInfo() {
                                 FileName = file,
                                 CreateNoWindow = false,
-                                Arguments = $"--updateSelf --programPath \"{Environment.ProcessPath}\" --programName \"{name}\""
+                                Arguments = $"--updateSelf --programPath \"{Environment.ProcessPath}\" --programName \"{name}\"",
+                                UseShellExecute = true
                             });
                         } else {
                             var name = Path.GetFileNameWithoutExtension(Environment.ProcessPath)!;
@@ -328,7 +329,8 @@ public partial class MainWindow : Window {
                             Process.Start(new ProcessStartInfo() {
                                 FileName = file,
                                 CreateNoWindow = false,
-                                Arguments = $"--updateSelf --programPath \"{Environment.ProcessPath}\" --programName \"{name}\""
+                                Arguments = $"--updateSelf --programPath \"{Environment.ProcessPath}\" --programName \"{name}\"",
+                                UseShellExecute = true
                             });
                         }
 
@@ -508,7 +510,7 @@ public partial class MainWindow : Window {
             // Use parallel to speed up.
             var cts = new CancellationTokenSource();
             await Parallel.ForEachAsync(desc.files, new ParallelOptions() {
-                MaxDegreeOfParallelism = 1, // Environment.ProcessorCount,
+                MaxDegreeOfParallelism = Environment.ProcessorCount,
                 CancellationToken = cts.Token
             }, async (f, ct) => {
                 var fullPath = new FileInfo(Path.Combine(distRoot, f.objectKey));

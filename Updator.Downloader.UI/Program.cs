@@ -2,6 +2,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using CommandLine;
 using Microsoft.Extensions.Logging;
@@ -51,16 +52,19 @@ class Program {
 
                     if (val.UpdateSelf) {
                         App.AppLog.LogInformation($"启动器自更新 {val.ProgramName} 路径：{Environment.ProcessPath} 回写：{val.ProgramPath}");
-                        var newFilePath = Path.ChangeExtension(Path.Combine(Directory.GetParent(val.ProgramPath)!.FullName, val.ProgramName), Path.GetExtension(val.ProgramPath));
-                        if (val.ProgramPath != newFilePath && File.Exists(val.ProgramPath)) {
-                            File.Delete(val.ProgramPath);
+                        var writeBackPath = Path.ChangeExtension(Path.Combine(Directory.GetParent(val.ProgramPath)!.FullName, val.ProgramName), Path.GetExtension(val.ProgramPath));
+                        if (val.ProgramPath != writeBackPath && File.Exists(val.ProgramPath)) {
+                            Retry.Run(() => { File.Delete(val.ProgramPath); }, 10, TimeSpan.FromSeconds(1));
                         }
 
-                        File.Copy(Environment.ProcessPath!, newFilePath, true);
+                        Retry.Run(() => { File.Copy(Environment.ProcessPath!, writeBackPath, true); }, 10, TimeSpan.FromSeconds(1));
                         Process.Start(new ProcessStartInfo() {
                             FileName = val.ProgramPath,
-                            CreateNoWindow = false
+                            CreateNoWindow = false,
+                            UseShellExecute = true
                         });
+
+                        return;
                     }
                 } catch (Exception ex) {
                     Debug.WriteLine(ex);
@@ -95,4 +99,20 @@ file class Options {
 
     [Option("delete", Required = false, Hidden = true)]
     public string DeletePath { get; set; }
+}
+
+static class Retry {
+    public static void Run(Action action, int times, TimeSpan interval) {
+        var count = 0;
+        while (count < times) {
+            try {
+                action();
+                return;
+            } catch (Exception ex) {
+                App.AppLog.LogError(ex, "RetryRun");
+                count++;
+                Thread.Sleep(interval);
+            }
+        }
+    }
 }
