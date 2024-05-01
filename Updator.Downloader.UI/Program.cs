@@ -52,14 +52,16 @@ class Program {
 
                     if (val.UpdateSelf) {
                         App.AppLog.LogInformation($"启动器自更新 {val.ProgramName} 路径：{Environment.ProcessPath} 回写：{val.ProgramPath}");
-                        var writeBackPath = Path.ChangeExtension(Path.Combine(Directory.GetParent(val.ProgramPath)!.FullName, val.ProgramName), Path.GetExtension(val.ProgramPath));
+                        var workingDirectory = Directory.GetParent(val.ProgramPath)!.FullName;
+                        var writeBackPath = Path.Combine(workingDirectory, val.ProgramName) + Path.GetExtension(val.ProgramPath);
                         if (val.ProgramPath != writeBackPath && File.Exists(val.ProgramPath)) {
                             Retry.Run(() => { File.Delete(val.ProgramPath); }, 10, TimeSpan.FromSeconds(1));
                         }
 
                         Retry.Run(() => { File.Copy(Environment.ProcessPath!, writeBackPath, true); }, 10, TimeSpan.FromSeconds(1));
                         Process.Start(new ProcessStartInfo() {
-                            FileName = val.ProgramPath,
+                            FileName = writeBackPath,
+                            WorkingDirectory = workingDirectory,
                             CreateNoWindow = false,
                             UseShellExecute = true
                         });

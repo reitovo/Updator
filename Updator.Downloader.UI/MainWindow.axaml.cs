@@ -324,7 +324,7 @@ public partial class MainWindow : Window {
                             });
                         } else {
                             var name = Path.GetFileNameWithoutExtension(Environment.ProcessPath)!;
-                            var file = Path.ChangeExtension(Path.GetTempFileName(), "exe");
+                            var file = Path.GetTempFileName() + ".exe";
                             await File.WriteAllBytesAsync(file, payload);
                             Process.Start(new ProcessStartInfo() {
                                 FileName = file,
