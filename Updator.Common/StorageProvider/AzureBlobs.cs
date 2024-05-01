@@ -1,4 +1,5 @@
-﻿using Azure;
+﻿using System.Diagnostics;
+using Azure;
 using Azure.Core;
 using Azure.Identity;
 using Azure.ResourceManager;
@@ -9,6 +10,7 @@ using Azure.ResourceManager.FrontDoor.Models;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using Azure.Storage.Blobs.Specialized;
+using Newtonsoft.Json;
 
 namespace Updator.Common.StorageProvider;
 
@@ -103,6 +105,7 @@ public class AzureBlobs : IStorageProvider, ICdnRefresh {
         if (_endpoint == null)
             return;
 
-        await _endpoint.PurgeContentAsync(WaitUntil.Completed, new FrontDoorPurgeContent([$"/{_container.Name}/{_prefix}*"]));
+        var resp = await _endpoint.PurgeContentAsync(WaitUntil.Completed, new FrontDoorPurgeContent([$"/{_container.Name}/{_prefix}*"]));
+        Debug.WriteLine(JsonConvert.SerializeObject(resp));
     }
 }
