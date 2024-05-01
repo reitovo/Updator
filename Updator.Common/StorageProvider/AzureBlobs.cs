@@ -92,8 +92,11 @@ public class AzureBlobs : IStorageProvider, ICdnRefresh {
         return hash == checksum;
     }
 
-    public Task CdnPrefetchObjectKeys(IEnumerable<string> objectKeys) {
-        return Task.CompletedTask;
+    public async Task CdnPrefetchObjectKeys(IEnumerable<string> objectKeys) {
+        if (_endpoint == null)
+            return;
+
+        await _endpoint.PurgeContentAsync(WaitUntil.Completed, new FrontDoorPurgeContent(objectKeys.Select(a => $"/{a}")));
     }
 
     public async Task CdnPurgePath() {
