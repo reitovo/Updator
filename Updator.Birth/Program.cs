@@ -124,12 +124,12 @@ await Parallel.ForEachAsync(config.projects, new ParallelOptions() { MaxDegreeOf
    File.WriteAllBytes(Path.Combine(birthDir, project.name, $"{project.name}.zip"), z);
 
    Console.WriteLine($@"Upload Tencent Cos {project.name}");
-   await storage.UploadAsync($"birth/{project.name}.zip", ms);
+   await storage.UploadAsync($"{project.name}.zip", ms);
 
    using var sourceMs = new MemoryStream(sources);
    await storage.UploadAsync($"{project.sourceKeyPrefix}/sources.json", sourceMs);
 
-   objectKeys.Add($"birth/{project.name}.zip");
+   objectKeys.Add($"{project.name}.zip");
    objectKeys.Add($"{project.sourceKeyPrefix}/sources.json");
 });
 
