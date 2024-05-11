@@ -58,8 +58,8 @@ if (!string.IsNullOrWhiteSpace(options.Base64ConfigFile)) {
     configString = Encoding.UTF8.GetString(Convert.FromBase64String(options.Base64ConfigFile));
 }
 
-if (!File.Exists("./config.json")) {
-    File.WriteAllText("./config.json", JsonSerializer.Serialize(new UploadConfig(), new JsonSerializerOptions() {
+if (!File.Exists(configPath)) {
+    File.WriteAllText(configPath, JsonSerializer.Serialize(new UploadConfig(), new JsonSerializerOptions() {
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
         WriteIndented = true,
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
@@ -248,7 +248,7 @@ logger.LogInformation("Uploaded storage description");
 if (storage is ICdnRefresh cdn) {
     logger.LogInformation("Refresh CDN");
     await cdn.CdnPrefetchObjectKeys(uploadedObjectKeys);
-    await cdn.CdnPurgePath();
+    // await cdn.CdnPurgePath();
 }
 
 logger.LogInformation("Done");
