@@ -201,7 +201,7 @@ await Parallel.ForEachAsync(root.Items, new ParallelOptions {
          logger.LogTrace($"Uploading {item.storageObjectKey}");
          ms.Position = 0;
          await storage.UploadAsync(item.storageObjectKey, ms);
-         logger.LogTrace($"Uploaded {item.storageObjectKey} -> done");
+         logger.LogTrace($"Uploaded {item.storageObjectKey} {checksum} -> done");
          uploadedObjectKeys.Add(item.storageObjectKey);
       }
    } catch (Exception ex) {
