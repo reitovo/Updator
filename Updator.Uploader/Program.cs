@@ -190,7 +190,7 @@ await Parallel.ForEachAsync(root.Items, new ParallelOptions {
         upload = true;
     } else {
         var same = await storage.CheckSameAsync(item.storageObjectKey, checksum);
-        logger.LogTrace($"Checking {item.storageObjectKey} -> {(same ? "same" : "not same")}");
+        logger.LogTrace($"Checking {item.storageObjectKey} {checksum} -> {(same ? "same" : "not same")}");
         if (!same) {
             upload = true;
         }
@@ -244,11 +244,13 @@ await storage.UploadAsync("__description.json", new MemoryStream(Encoding.UTF8.G
 uploadedObjectKeys.Add("__description.json");
 logger.LogInformation("Uploaded storage description");
 
+logger.LogInformation($"Totally {uploadedObjectKeys.Count} files changed");
+
 // Refresh CDN if provider has such interface
 if (storage is ICdnRefresh cdn) {
     logger.LogInformation("Refresh CDN");
-    await cdn.CdnPrefetchObjectKeys(uploadedObjectKeys);
-    // await cdn.CdnPurgePath();
+    // await cdn.CdnPrefetchObjectKeys(uploadedObjectKeys);
+    await cdn.CdnPurgePath();
 }
 
 logger.LogInformation("Done");

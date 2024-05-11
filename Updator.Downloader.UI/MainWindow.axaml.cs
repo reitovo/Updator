@@ -555,10 +555,12 @@ public partial class MainWindow : Window {
                 if (download) {
                     var retryCount = 0;
                     while (true) {
+                        var bytesRead = 0L;
                         try {
                             await http.DownloadAsync(Path.Combine(source.distributionUrl, f.objectKey), fullPath, check, f.checksum, compress, ct,
                                 tuple => {
                                     if (!legacyDownloadProgress) {
+                                        bytesRead += tuple.BlockRead;
                                         IncrementProgressBar(tuple.BlockRead);
                                     }
                                 });
@@ -567,6 +569,7 @@ public partial class MainWindow : Window {
                             // ignored
                         } catch (Exception ex) {
                             App.AppLog.LogError(ex, $"下载错误");
+                            App.AppLog.LogError($"{f.objectKey} {f.checksum} {f.downloadSize} {f.fileSize}");
                             if (retryCount++ < 3) {
                                 await Task.Delay(TimeSpan.FromSeconds(1), ct);
                             } else {
@@ -578,6 +581,8 @@ public partial class MainWindow : Window {
                                 break;
                             }
                         }
+
+                        IncrementProgressBar(-bytesRead);
                     }
                 } else {
                     IncrementProgressBar(f.downloadSize);

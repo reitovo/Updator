@@ -39,7 +39,7 @@ public static class HttpClientExtension {
 
         var c = await check.GetChecksum();
         if (c != checksumValue) {
-            throw new InvalidDataException("checksum failed");
+            throw new InvalidDataException($"checksum failed {c} != {checksumValue}");
         }
     }
 }
