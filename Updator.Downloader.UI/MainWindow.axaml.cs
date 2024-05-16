@@ -560,9 +560,9 @@ public partial class MainWindow : Window {
          });
 
          // 真正的下载环节
-         var totalDownloadSize = desc.files.Sum(a => a.downloadSize);
+         var totalDownloadSize = downloads.Sum(a => a.downloadSize);
          var legacyDownloadProgress = totalDownloadSize == 0;
-         SetProgressBarMax(legacyDownloadProgress ? desc.files.Count : totalDownloadSize);
+         SetProgressBarMax(legacyDownloadProgress ? downloads.Count : totalDownloadSize);
 
          string GetByteSizeString(long bytes) {
             if (bytes < 1024) {
