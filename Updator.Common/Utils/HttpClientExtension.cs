@@ -12,7 +12,7 @@ public static class HttpClientExtension {
 
       await using var fs = outFile.Create();
 
-      var buffer = new byte[16384];
+      var buffer = new byte[65536];
       var check = checksum.CreateStreamChecksum();
       using var decompress = compress.CreateDecompressStream(fs);
 

@@ -92,6 +92,8 @@ if (storage == null) {
    return -1;
 }
 
+var localFileCheck = new ChecksumLocalCrc64();
+
 IChecksumProvider check = config.checksum switch {
    "crc64" => new ChecksumCosCrc64(),
    "azure-md5" => new ChecksumAzureMd5(),
@@ -172,7 +174,7 @@ await Parallel.ForEachAsync(root.Items, new ParallelOptions {
       ms.Position = 0;
       var checksum = await check.CalculateChecksum(ms);
       fs.Position = 0;
-      var fileChecksum = await check.CalculateChecksum(fs);
+      var fileChecksum = await localFileCheck.CalculateChecksum(fs);
       await fs.DisposeAsync();
       fs.Close();
 
