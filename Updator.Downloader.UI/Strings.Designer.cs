@@ -213,6 +213,15 @@ namespace Updator.Downloader.UI {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Verifying files.
+        /// </summary>
+        internal static string VerifyingFiles {
+            get {
+                return ResourceManager.GetString("VerifyingFiles", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Yes.
         /// </summary>
         internal static string Yes {

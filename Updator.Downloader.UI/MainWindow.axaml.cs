@@ -470,7 +470,6 @@ public partial class MainWindow : Window {
             return;
          }
 
-         SetJobName(Strings.DownloadUpdateFiles);
          var distRoot = new DirectoryInfo(Path.Combine(Environment.CurrentDirectory, desc.channel)).FullName;
          var descPath = Path.Combine(distRoot, "__description.json");
 
@@ -519,6 +518,7 @@ public partial class MainWindow : Window {
          var cts = new CancellationTokenSource();
          var downloads = new ConcurrentBag<DistFile>();
          var checksumCount = 0;
+         desc.files.Sort((a, b) => b.fileSize.CompareTo(a.fileSize));
          await Parallel.ForEachAsync(desc.files, new ParallelOptions() {
             MaxDegreeOfParallelism = Environment.ProcessorCount,
             CancellationToken = cts.Token
@@ -557,7 +557,7 @@ public partial class MainWindow : Window {
             }
 
             IncrementProgressBar(1);
-            SetJobName($"{Strings.DownloadUpdateFiles} ({Interlocked.Increment(ref checksumCount)}/{desc.files.Count})");
+            SetJobName($"{Strings.VerifyingFiles} ({Interlocked.Increment(ref checksumCount)}/{desc.files.Count})");
          });
 
          // 真正的下载环节
@@ -570,7 +570,7 @@ public partial class MainWindow : Window {
                return $"{bytes} B";
             }
 
-            var units = new[] { "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB" };
+            var units = new[] { "B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB" };
             var unit = 0;
             var size = (double)bytes;
             while (size >= 1024) {
@@ -578,7 +578,7 @@ public partial class MainWindow : Window {
                unit++;
             }
 
-            return $"{size:0.##} {units[unit]}";
+            return $"{size:f2} {units[unit]}";
          }
 
          void IncrementProgressBarAndDownloadSize(double value) {

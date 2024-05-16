@@ -72,4 +72,7 @@
     <data name="DownloadFileFailed" xml:space="preserve">
         <value>Download failed, try again later</value>
     </data>
+    <data name="VerifyingFiles" xml:space="preserve">
+        <value>Verifying files</value>
+    </data>
 </root>

@@ -24,7 +24,7 @@
         <value>更新元数据</value>
     </data>
     <data name="DownloadUpdateFiles" xml:space="preserve">
-        <value>更新文件</value>
+        <value>下载文件</value>
     </data>
     <data name="UpdateDone" xml:space="preserve">
         <value>更新完成，启动 {0} 中</value>
@@ -64,5 +64,8 @@
     </data>
     <data name="DownloadFileFailed" xml:space="preserve">
         <value>下载或写入失败，请检查程序是否正在运行，或者网络环境不稳定，请稍后重试</value>
+    </data>
+    <data name="VerifyingFiles" xml:space="preserve">
+        <value>校验文件</value>
     </data>
 </root>
