@@ -517,8 +517,7 @@ public partial class MainWindow : Window {
          // Use parallel to speed up.
          var cts = new CancellationTokenSource();
          var downloads = new ConcurrentBag<DistFile>();
-         var checksumCount = 0;
-         desc.files.Sort((a, b) => b.fileSize.CompareTo(a.fileSize));
+         var checksumCount = 0; 
          await Parallel.ForEachAsync(desc.files, new ParallelOptions() {
             MaxDegreeOfParallelism = Environment.ProcessorCount,
             CancellationToken = cts.Token
