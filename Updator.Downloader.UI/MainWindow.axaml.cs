@@ -533,7 +533,7 @@ public partial class MainWindow : Window {
             if (!fullPath.Exists) {
                download = true;
             } else {
-               if (string.IsNullOrWhiteSpace(f.fileChecksum)) {
+               if (string.IsNullOrWhiteSpace(f.fileChecksumLocalCrc64)) {
                   using var ms = new MemoryStream();
                   await using var fs = fullPath.OpenRead();
                   await compress.Compress(fs, ms);
@@ -546,7 +546,7 @@ public partial class MainWindow : Window {
                   await using var fs = fullPath.OpenRead();
                   var localHash = new ChecksumLocalCrc64();
                   var checksum = await localHash.CalculateChecksum(fs);
-                  if (checksum != f.fileChecksum) {
+                  if (checksum != f.fileChecksumLocalCrc64) {
                      download = true;
                   }
                }

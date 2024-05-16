@@ -3,9 +3,9 @@
 namespace Updator.Common.Downloader;
 
 public class Meta {
-    public const int WinVersion = 90;
-    public const int MacVersion = 90;
-    public const int LinuxVersion = 90;
+    public const int WinVersion = 91;
+    public const int MacVersion = 91;
+    public const int LinuxVersion = 91;
 
     public static int RuntimeVersion {
         get {

@@ -180,7 +180,7 @@ await Parallel.ForEachAsync(root.Items, new ParallelOptions {
 
       descFiles.Add(new() {
          checksum = checksum,
-         fileChecksum = fileChecksum,
+         fileChecksumLocalCrc64 = fileChecksum,
          objectKey = item.storageObjectKey,
          fileSize = item.fileInfo.Length,
          downloadSize = ms.Length
