@@ -17,12 +17,16 @@ namespace Updator.Common.StorageProvider;
 public class TencentCosConfig {
    // Region
    public string region { get; set; }
+
    // Secret id, https://console.cloud.tencent.com/cam/capi
    public string secretId { get; set; }
+
    // Secret key, https://console.cloud.tencent.com/cam/capi
    public string secretKey { get; set; }
+
    // The bucket to upload to
    public string bucket { get; set; }
+
    // Add a prefix to all objects. Put everything in an sub-folder to reuse the bucket
    // Combined as Path.Combine(config.objectKeyPrefix, objectKey).Replace(@"\", "/")
    // For example `project-name/release`
@@ -209,7 +213,6 @@ public class TencentCos : IStorageProvider, ICdnRefresh {
                UrlEncode = true,
                FlushType = "flush"
             };
-
             if (req.Paths.Length == 0)
                return;
 
@@ -217,6 +220,21 @@ public class TencentCos : IStorageProvider, ICdnRefresh {
             var resp = await client.PurgePathCache(req);
             // 输出json格式的字符串回包
             Debug.WriteLine(AbstractModel.ToJsonString(resp));
+
+            var cts = new CancellationTokenSource(TimeSpan.FromMinutes(10));
+            while (!cts.IsCancellationRequested) {
+               var respQuery = await client.DescribePurgeTasks(new() {
+                  TaskId = resp.TaskId
+               });
+               // 输出json格式的字符串回包
+               Debug.WriteLine(AbstractModel.ToJsonString(respQuery));
+               if (respQuery.PurgeLogs is { Length: > 0 }) {
+                  var task = respQuery.PurgeLogs[0];
+                  if (task.Status == "done") {
+                     break;
+                  }
+               }
+            }
          }
       } catch (Exception ex) {
          Debug.WriteLine(ex);
@@ -307,7 +325,7 @@ public class TencentCos : IStorageProvider, ICdnRefresh {
             // 输出json格式的字符串回包
             Debug.WriteLine(AbstractModel.ToJsonString(resp));
 
-            var cts = new CancellationTokenSource(TimeSpan.FromMinutes(3));
+            var cts = new CancellationTokenSource(TimeSpan.FromMinutes(10));
             var reqQuery = new DescribePurgeTasksRequest() {
                Filters = [new AdvancedFilter { Name = "job-id", Values = [resp.JobId] }]
             };
