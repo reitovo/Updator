@@ -289,6 +289,8 @@ public class TencentCos : IStorageProvider, ICdnRefresh {
                   }
                }
             }
+
+            await Task.Delay(TimeSpan.FromMilliseconds(500), cts.Token);
          }
       } catch (Exception ex) {
          Debug.WriteLine(ex);
@@ -339,6 +341,8 @@ public class TencentCos : IStorageProvider, ICdnRefresh {
                      break;
                   }
                }
+
+               await Task.Delay(TimeSpan.FromMilliseconds(500), cts.Token);
             }
          }
       } catch (Exception ex) {
