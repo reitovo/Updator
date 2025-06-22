@@ -34,8 +34,8 @@ jobs:
 
       - name: Embed sources.json
         run: |
-          Copy-Item -Path "code/Updator.Birth/birth/${{ matrix.project.name }}/sources.json" -Destination "code/Updator.Downloader.UI/EmbeddedSources.json"
-        shell: powershell
+          copy "code\Updator.Birth\birth\${{ matrix.project.name }}\sources.json" "code\Updator.Downloader.UI\EmbeddedSources.json"
+        shell: cmd
 
       - name: Publish Windows ${{ matrix.project.display }}
         run: dotnet publish -r win-x64 -c Release --self-contained --framework net8.0 -o "${{ github.workspace }}/win"
