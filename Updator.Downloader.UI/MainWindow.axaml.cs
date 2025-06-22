@@ -516,7 +516,7 @@ public partial class MainWindow : Window {
             return;
          }
 
-         var distRoot = new DirectoryInfo(Path.Combine(App.AppLocalDataFolder, "dist", desc.channel)).FullName;
+         var distRoot = new DirectoryInfo(Path.Combine(App.AppLocalDataFolder, "dist", sources.defaultName, desc.channel)).FullName;
          var descPath = Path.Combine(distRoot, "__description.json");
 
          App.AppLog.LogInformation($"写入目录 {distRoot}");

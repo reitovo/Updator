@@ -6,8 +6,3 @@ public class BirthProject {
    public string display { get; set; }
    public string sourceKeyPrefix { get; set; }
 }
-
-public class BirthConfig {
-   public string suffix { get; set; }
-   public List<BirthProject> projects { get; set; }
-}
