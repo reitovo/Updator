@@ -5,7 +5,6 @@ using System.Text.Json;
 using CommandLine;
 using ICSharpCode.SharpZipLib.Zip;
 using Updator.Birth;
-using Updator.Common.CompressionProvider;
 using Updator.Common.StorageProvider;
 using Crc32 = System.IO.Hashing.Crc32;
 using ZipFile = ICSharpCode.SharpZipLib.Zip.ZipFile;
@@ -32,22 +31,20 @@ var storage = new TencentCos(cosConfig);
 
 // Get projects root from args[0]
 var birthDir = opt.BirthRoot;
-
-var config = await JsonSerializer.DeserializeAsync<BirthConfig>(
-   new MemoryStream(File.ReadAllBytes(Path.Combine(birthDir, "birth.json"))));
-
-
-async Task<byte[]> DecompressBrotli(byte[] data) {
-   using var decompressed = new MemoryStream();
-   using var compressed = new MemoryStream(data);
-   var brotli = new Brotli();
-   await brotli.Decompress(compressed, decompressed);
-   decompressed.Position = 0;
-   return decompressed.ToArray();
-}
-
 var objectKeys = new List<string>();
-await Parallel.ForEachAsync(config.projects, new ParallelOptions() { MaxDegreeOfParallelism = 4 }, async (project, _) => {
+
+// Parse project configuration from JSON
+var projectInfo = JsonSerializer.Deserialize<ProjectInfo>(opt.ProjectConfig);
+Console.WriteLine($"Processing project: {projectInfo.name}");
+
+var project = new BirthProject {
+   name = projectInfo.name,
+   platform = projectInfo.platform,
+   display = projectInfo.display,
+   sourceKeyPrefix = projectInfo.sourceKeyPrefix
+};
+
+await Task.Run(async () => {
    Console.WriteLine($@"Publish {project.name}");
    var path = Path.Combine(birthDir, project.name, "sources.json");
    if (!File.Exists(path)) {
@@ -55,9 +52,9 @@ await Parallel.ForEachAsync(config.projects, new ParallelOptions() { MaxDegreeOf
       return;
    }
 
-   using var http = new HttpClient();
-   var bin = await http.GetByteArrayAsync($"https://dist-1304010062.cos.accelerate.myqcloud.com/downloader/ui-{project.platform}");
-   bin = await DecompressBrotli(bin);
+   // Use provided executable path
+   var bin = await File.ReadAllBytesAsync(opt.ExecutablePath);
+   Console.WriteLine($@"Using executable: {opt.ExecutablePath}");
 
    using var ms = new MemoryStream();
    var zip = ZipFile.Create(ms);
@@ -83,7 +80,7 @@ await Parallel.ForEachAsync(config.projects, new ParallelOptions() { MaxDegreeOf
 
    if (project.platform == "osx") {
       var exe = new ZipEntry(
-         $"{name}/{name}{config.suffix}.zip") {
+         $"{name}/{name}{projectInfo.suffix}.zip") {
          IsUnicodeText = true,
          HostSystem = 3,
          ExternalFileAttributes = 0x81a4 << 16,
@@ -91,10 +88,10 @@ await Parallel.ForEachAsync(config.projects, new ParallelOptions() { MaxDegreeOf
          Crc = BitConverter.ToInt32(Crc32.Hash(bin))
       };
       zip.Add(new MemoryDataSource(bin), exe);
-      AddHint("请解压后将所有文件移动至任意其他文件夹使用，否则可能会找不到文件！如更新过程出错，请前往 https://reito.fun 重新下载");
+      AddHint("如更新过程出错，请前往 https://reito.fun 重新下载");
    } else {
       var exe = new ZipEntry(
-         $"{name}/{name}{config.suffix}{(project.platform == "win" ? ".exe" : string.Empty)}") {
+         $"{name}/{name}{projectInfo.suffix}{(project.platform == "win" ? ".exe" : string.Empty)}") {
          IsUnicodeText = true,
          HostSystem = 3,
          ExternalFileAttributes = 0x81ed << 16,
@@ -105,18 +102,7 @@ await Parallel.ForEachAsync(config.projects, new ParallelOptions() { MaxDegreeOf
       AddHint("请解压至任意文件夹使用，不要直接在压缩包中打开！如更新过程出错，请前往 https://reito.fun 重新下载");
    }
 
-   var sources = File.ReadAllBytes(path);
-   var src = new ZipEntry($"{name}/sources.json") {
-      IsUnicodeText = true,
-      HostSystem = 3,
-      ExternalFileAttributes = 0x81a4 << 16,
-      Size = sources.Length,
-      Crc = BitConverter.ToInt32(Crc32.Hash(sources))
-   };
-
-   zip.Add(new MemoryDataSource(sources), src);
    zip.CommitUpdate();
-
    zip.Close();
 
    var z = ms.ToArray();
@@ -126,6 +112,7 @@ await Parallel.ForEachAsync(config.projects, new ParallelOptions() { MaxDegreeOf
    Console.WriteLine($@"Upload Tencent Cos {project.name}");
    await storage.UploadAsync($"{project.name}.zip", ms);
 
+   var sources = File.ReadAllBytes(path);
    using var sourceMs = new MemoryStream(sources);
    await storage.UploadAsync($"{project.sourceKeyPrefix}/sources.json", sourceMs);
 
@@ -141,23 +128,30 @@ Console.WriteLine(@"Done Tencent Cos");
 return 0;
 
 namespace Updator.Birth {
-   class MemoryDataSource : IStaticDataSource {
-      private readonly MemoryStream _ms;
-
-      public MemoryDataSource(byte[] b) {
-         _ms = new MemoryStream(b);
-      }
+   class MemoryDataSource(byte[] b) : IStaticDataSource {
+      private readonly MemoryStream _ms = new(b);
 
       public Stream GetSource() {
          return _ms;
       }
    }
 
-
    file class Options {
       [Option("cos", Required = false)]
       public string Cos { get; set; }
       [Option("path", Required = false)]
       public string BirthRoot { get; set; }
+      [Option("projectConfig", Required = false)]
+      public string ProjectConfig { get; set; }
+      [Option("executable", Required = false)]
+      public string ExecutablePath { get; set; }
+   }
+
+   file class ProjectInfo {
+      public string name { get; set; }
+      public string platform { get; set; }
+      public string display { get; set; }
+      public string sourceKeyPrefix { get; set; }
+      public string suffix { get; set; } = "启动器";
    }
 }

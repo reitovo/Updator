@@ -13,6 +13,14 @@ jobs:
   build-win:
     runs-on: windows-latest
     if: ${{ !contains(github.event.head_commit.message, 'no-win') && !contains(github.event.head_commit.message, 'no-run') }}
+    strategy:
+      matrix:
+        project: [
+          { name: "弹幕姬", platform: "win", display: "弹幕姬", sourceKeyPrefix: "bliveassist", suffix: "启动器" },
+          { name: "弹幕姬面捕连接助手-win", platform: "win", display: "弹幕姬面捕连接助手", sourceKeyPrefix: "blive-face-relay/win", suffix: "启动器" },
+          { name: "VLink", platform: "win", display: "VLink联动", sourceKeyPrefix: "vtslink", suffix: "启动器" },
+          { name: "点歌姬-win", platform: "win", display: "点歌姬", sourceKeyPrefix: "songchan/win", suffix: "启动器" }
+        ]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -24,63 +32,68 @@ jobs:
         with:
           dotnet-version: '8'
 
-      - name: Publish Windows
+      - name: Embed sources.json
+        run: |
+          Copy-Item -Path "code/Updator.Birth/birth/${{ matrix.project.name }}/sources.json" -Destination "code/Updator.Downloader.UI/EmbeddedSources.json"
+        shell: powershell
+
+      - name: Publish Windows ${{ matrix.project.display }}
         run: dotnet publish -r win-x64 -c Release --self-contained --framework net8.0 -o "${{ github.workspace }}/win"
         working-directory: ${{ github.workspace }}/code/Updator.Downloader.UI
 
-      - name: Build Publisher
-        run: dotnet build -o "${{ github.workspace }}/publisher"
-        working-directory: ${{ github.workspace }}/code/Updator.Downloader.Publish
+      - name: Build Birth
+        run: dotnet build -o "${{ github.workspace }}/birth"
+        working-directory: ${{ github.workspace }}/code/Updator.Birth
 
-      - name: Upload
+      - name: Upload Birth Package
         run: |
-          dotnet Updator.Downloader.Publish.dll --legacy false --config ${{ secrets.PUBLISHER_CONFIG }} --os win --path "${{ github.workspace }}/win/Updator.Downloader.UI.exe"
-        working-directory: ${{ github.workspace }}/publisher 
-
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: win
-          path: "${{ github.workspace }}/win/Updator.Downloader.UI.exe"
+          dotnet Updator.Birth.dll --cos ${{ secrets.BIRTH_CONFIG }} --path "${{ github.workspace }}/code/Updator.Birth/birth" --projectConfig '${{ toJson(matrix.project) }}' --executable "${{ github.workspace }}/win/Updator.Downloader.UI.exe"
+        working-directory: ${{ github.workspace }}/birth
           
           
-  build-linux:
-    runs-on: ubuntu-latest
-    if: ${{ !contains(github.event.head_commit.message, 'no-linux') && !contains(github.event.head_commit.message, 'no-run') }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          path: code
+  # build-linux:
+  #   runs-on: ubuntu-latest
+  #   if: ${{ !contains(github.event.head_commit.message, 'no-linux') && !contains(github.event.head_commit.message, 'no-run') }}
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #       with:
+  #         path: code
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8' 
+  #     - name: Setup .NET
+  #       uses: actions/setup-dotnet@v4
+  #       with:
+  #         dotnet-version: '8' 
 
-      - name: Publish Linux
-        run: dotnet publish -r linux-x64 -c Release --self-contained --framework net8.0 -o "${{ github.workspace }}/linux"
-        working-directory: ${{ github.workspace }}/code/Updator.Downloader.UI
+  #     - name: Publish Linux
+  #       run: dotnet publish -r linux-x64 -c Release --self-contained --framework net8.0 -o "${{ github.workspace }}/linux"
+  #       working-directory: ${{ github.workspace }}/code/Updator.Downloader.UI
 
-      - name: Build Publisher
-        run: dotnet build -o "${{ github.workspace }}/publisher"
-        working-directory: ${{ github.workspace }}/code/Updator.Downloader.Publish
+  #     - name: Build Publisher
+  #       run: dotnet build -o "${{ github.workspace }}/publisher"
+  #       working-directory: ${{ github.workspace }}/code/Updator.Downloader.Publish
 
-      - name: Upload
-        run: | 
-          dotnet Updator.Downloader.Publish.dll --config ${{ secrets.PUBLISHER_CONFIG }} --os linux --path "${{ github.workspace }}/linux/Updator.Downloader.UI"
-        working-directory: ${{ github.workspace }}/publisher 
+  #     - name: Upload
+  #       run: | 
+  #         dotnet Updator.Downloader.Publish.dll --config ${{ secrets.PUBLISHER_CONFIG }} --os linux --path "${{ github.workspace }}/linux/Updator.Downloader.UI"
+  #       working-directory: ${{ github.workspace }}/publisher 
 
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux
-          path: "${{ github.workspace }}/linux/Updator.Downloader.UI"
+  #     - name: Upload Artifacts
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: linux
+  #         path: "${{ github.workspace }}/linux/Updator.Downloader.UI"
           
 
   build-osx:
     runs-on: macos-latest
     if: ${{ !contains(github.event.head_commit.message, 'no-osx') && !contains(github.event.head_commit.message, 'no-run') }}
+    strategy:
+      matrix:
+        project: [
+          { name: "弹幕姬面捕连接助手-osx", platform: "osx", display: "弹幕姬面捕连接助手", sourceKeyPrefix: "blive-face-relay/osx", suffix: "启动器" },
+          { name: "点歌姬-osx", platform: "osx", display: "点歌姬", sourceKeyPrefix: "songchan/osx", suffix: "启动器" }
+        ]
     env:
       APP_PACKAGE_ZIP: build.zip
       APP_PACKAGE_NAME: build.app
@@ -102,8 +115,12 @@ jobs:
           mkdir "${{ env.APP_PACKAGE_NAME }}"
           mkdir "${{ env.APP_PACKAGE_NAME }}/Contents"
           mkdir "${{ env.APP_PACKAGE_NAME }}/Contents/MacOS" 
+
+      - name: Embed sources.json
+        run: |
+          cp "code/Updator.Birth/birth/${{ matrix.project.name }}/sources.json" "code/Updator.Downloader.UI/EmbeddedSources.json"
           
-      - name: Publish Mac
+      - name: Publish Mac ${{ matrix.project.display }}
         run: dotnet publish -r osx-x64 -c Release --self-contained --framework net8.0 -o "${{ github.workspace }}/${{ env.APP_PACKAGE_NAME }}/Contents/MacOS" 
         working-directory: ${{ github.workspace }}/code/Updator.Downloader.UI
 
@@ -149,46 +166,17 @@ jobs:
             xcrun notarytool submit "${{ env.APP_PACKAGE_ZIP }}" --wait --keychain-profile "AC_PASSWORD"
             xcrun stapler staple "${{ env.APP_PACKAGE_NAME }}"
 
-      - name: Build Publisher
-        run: dotnet build -o "${{ github.workspace }}/publisher"
-        working-directory: ${{ github.workspace }}/code/Updator.Downloader.Publish
-        
-      - name: Upload
+      - name: Build Birth
+        run: dotnet build -o "${{ github.workspace }}/birth"
+        working-directory: ${{ github.workspace }}/code/Updator.Birth
+
+      - name: Upload Birth Package
         run: |
-          dotnet Updator.Downloader.Publish.dll --config ${{ secrets.PUBLISHER_CONFIG }} --os osx --path "${{ github.workspace }}/${{ env.APP_PACKAGE_ZIP }}"
-        working-directory: ${{ github.workspace }}/publisher 
-          
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: osx
-          path: "${{ github.workspace }}/${{ env.APP_PACKAGE_ZIP }}"
+          dotnet Updator.Birth.dll --cos ${{ secrets.BIRTH_CONFIG }} --path "${{ github.workspace }}/code/Updator.Birth/birth" --projectConfig '${{ toJson(matrix.project) }}' --executable "${{ github.workspace }}/${{ env.APP_PACKAGE_ZIP }}"
+        working-directory: ${{ github.workspace }}/birth
           
       - name: Restore
         if: always()
         run: |
           security default-keychain -s login.keychain 
           security delete-keychain build.keychain
-          
-  build-birth:
-    needs: [ build-win, build-osx, build-linux ]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          path: code
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8' 
-
-      - name: Build Birth
-        run: dotnet build -o "${{ github.workspace }}/birth"
-        working-directory: ${{ github.workspace }}/code/Updator.Birth
-
-      - name: Upload
-        run: |
-          dotnet Updator.Birth.dll --cos ${{ secrets.BIRTH_CONFIG }} --path "${{ github.workspace }}/code/Updator.Birth/birth"
-        working-directory: ${{ github.workspace }}/birth 

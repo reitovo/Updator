@@ -56,6 +56,7 @@
       <EmbeddedResource Update="Strings.zh.resx">
         <DependentUpon>Strings.resx</DependentUpon>
       </EmbeddedResource>
+      <EmbeddedResource Include="EmbeddedSources.json" Condition="Exists('EmbeddedSources.json')" />
     </ItemGroup>
 
     <ItemGroup>

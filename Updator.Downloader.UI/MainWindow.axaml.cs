@@ -6,6 +6,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -166,6 +167,29 @@ public partial class MainWindow : Window {
       Dispatcher.UIThread.Invoke(() => { JobName.Content = name; });
    }
 
+   private async Task<Sources> LoadEmbeddedSources() {
+      try {
+         var assembly = Assembly.GetExecutingAssembly();
+         var resourceName = "Updator.Downloader.UI.EmbeddedSources.json";
+
+         await using var stream = assembly.GetManifestResourceStream(resourceName);
+         if (stream != null) {
+            var sources = await JsonSerializer.DeserializeAsync(stream, SourcesSerializer.Default.Sources);
+            if (string.IsNullOrWhiteSpace(sources.defaultName)) {
+               App.AppLog.LogError("默认软件源名称未设置");
+               return null;
+            }
+
+            App.AppLog.LogInformation("使用默认软件源");
+            return sources;
+         }
+      } catch (Exception ex) {
+         App.AppLog.LogError(ex, "加载默认软件源失败");
+      }
+
+      return null;
+   }
+
    public async Task InitializeSource() {
       try {
          // Default downloader self-update url.
@@ -196,12 +220,26 @@ public partial class MainWindow : Window {
             }
          }
 
-         // Reads sources.json
-         var sourcesPath = Path.Combine(Environment.CurrentDirectory, "sources.json");
-         if (!File.Exists(sourcesPath)) {
+         // Try embedded sources first
+         Sources sources = await LoadEmbeddedSources();
+
+         var appDataSourcesPath = sources == null
+            ? Path.Combine(Environment.CurrentDirectory, "sources.json")
+            : Path.Combine(App.AppLocalDataFolder, $"sources-{sources.defaultName}.json");
+         var sourcesPath = appDataSourcesPath;
+
+         if (File.Exists(sourcesPath)) {
+            sources = JsonSerializer.Deserialize(new MemoryStream(await File.ReadAllBytesAsync(sourcesPath)),
+               SourcesSerializer.Default.Sources);
+            App.AppLog.LogInformation($"本地缓存源：{sourcesPath}");
+         }
+
+         if (sources == null) {
+            // Finally, try file picker
             var openFileDialog = await Dispatcher.UIThread.Invoke(async () => await StorageProvider.OpenFilePickerAsync(
                new FilePickerOpenOptions() {
-                  FileTypeFilter = new[] { new FilePickerFileType("sources.json") { Patterns = new[] { "sources.json" } } },
+                  FileTypeFilter = new[]
+                     { new FilePickerFileType("sources.json") { Patterns = new[] { "sources.json" } } },
                   Title = Strings.OpenSourcesFile
                }
             ));
@@ -209,20 +247,18 @@ public partial class MainWindow : Window {
             if (first != null) {
                sourcesPath = first.Path.LocalPath;
                Environment.CurrentDirectory = Path.GetDirectoryName(sourcesPath)!;
+               sources = JsonSerializer.Deserialize(new MemoryStream(await File.ReadAllBytesAsync(sourcesPath)),
+                  SourcesSerializer.Default.Sources);
+               App.AppLog.LogInformation($"用户选择源：{sourcesPath}");
             } else {
                Dispatcher.UIThread.InvokeShutdown();
             }
          }
 
-         App.AppLog.LogInformation($"源：{sourcesPath}");
          App.AppLog.LogInformation($"工作目录 {Environment.CurrentDirectory}");
 
-         Sources sources = null;
-         if (File.Exists(sourcesPath)) {
-            sources = JsonSerializer.Deserialize(new MemoryStream(await File.ReadAllBytesAsync(sourcesPath)),
-               SourcesSerializer.Default.Sources);
+         if (sources != null) {
             App.AppLog.LogInformation($"默认名称：{sources.defaultName}");
-
             SetProjectName(sources.defaultName);
             SetAppIcon(sources.defaultIcon ?? "Icon.ico");
          }
@@ -237,7 +273,8 @@ public partial class MainWindow : Window {
 
          var latestDownloaderVersion = 0;
          try {
-            if (int.TryParse(await http.GetStringAsync(Path.Combine(downloaderUrl, $"{Meta.RuntimeString}-build-id")), out var v)) {
+            if (int.TryParse(await http.GetStringAsync(Path.Combine(downloaderUrl, $"{Meta.RuntimeString}-build-id")),
+                   out var v)) {
                latestDownloaderVersion = v;
             }
          } catch (Exception ex) {
@@ -252,7 +289,8 @@ public partial class MainWindow : Window {
             var result = await Dispatcher.UIThread.Invoke(async () => {
                return await MessageBoxManager.GetMessageBoxCustom(new MessageBoxCustomParams() {
                      ContentTitle = Strings.Update,
-                     ContentMessage = string.Format(Strings.UpdateDownloaderAsk, Meta.RuntimeVersion, latestDownloaderVersion),
+                     ContentMessage = string.Format(Strings.UpdateDownloaderAsk, Meta.RuntimeVersion,
+                        latestDownloaderVersion),
                      ButtonDefinitions = new ButtonDefinition[] {
                         new() {
                            Name = Strings.Yes
@@ -271,7 +309,8 @@ public partial class MainWindow : Window {
                App.AppLog.LogInformation($"执行更新");
                SetJobName(Strings.UpdateDownloader);
 
-               var signature = await http.GetByteArrayAsync(Path.Combine(downloaderUrl, $"ui-{Meta.RuntimeString}.sha512"));
+               var signature =
+                  await http.GetByteArrayAsync(Path.Combine(downloaderUrl, $"ui-{Meta.RuntimeString}.sha512"));
 
                // Download with progress
                // TODO: Extract this code in a extension.
@@ -330,7 +369,8 @@ public partial class MainWindow : Window {
                      Process.Start(new ProcessStartInfo() {
                         FileName = file,
                         CreateNoWindow = false,
-                        Arguments = $"--updateSelf --programPath \"{Environment.ProcessPath}\" --programName \"{name}\"",
+                        Arguments =
+                           $"--updateSelf --programPath \"{Environment.ProcessPath}\" --programName \"{name}\"",
                         UseShellExecute = true
                      });
                   } else {
@@ -340,7 +380,8 @@ public partial class MainWindow : Window {
                      Process.Start(new ProcessStartInfo() {
                         FileName = file,
                         CreateNoWindow = false,
-                        Arguments = $"--updateSelf --programPath \"{Environment.ProcessPath}\" --programName \"{name}\"",
+                        Arguments =
+                           $"--updateSelf --programPath \"{Environment.ProcessPath}\" --programName \"{name}\"",
                         UseShellExecute = true
                      });
                   }
@@ -406,7 +447,12 @@ public partial class MainWindow : Window {
                         WriteIndented = true,
                         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault
                      }).Sources);
-                  await File.WriteAllTextAsync(sourcesPath, newSourcesStr);
+
+                  // Save updated sources.json to AppData directory
+                  var updatedSourcesPath = appDataSourcesPath;
+                  Directory.CreateDirectory(Path.GetDirectoryName(updatedSourcesPath)!);
+                  await File.WriteAllTextAsync(updatedSourcesPath, newSourcesStr);
+                  App.AppLog.LogInformation($"已更新软件源至 {updatedSourcesPath}");
                }
 
                SetProgressBar(100);
@@ -470,7 +516,7 @@ public partial class MainWindow : Window {
             return;
          }
 
-         var distRoot = new DirectoryInfo(Path.Combine(Environment.CurrentDirectory, desc.channel)).FullName;
+         var distRoot = new DirectoryInfo(Path.Combine(App.AppLocalDataFolder, "dist", desc.channel)).FullName;
          var descPath = Path.Combine(distRoot, "__description.json");
 
          App.AppLog.LogInformation($"写入目录 {distRoot}");
@@ -485,7 +531,8 @@ public partial class MainWindow : Window {
          // If there's an old description file, and have update logs
          if (File.Exists(descPath)) {
             try {
-               var oldDesc = await JsonSerializer.DeserializeAsync(new MemoryStream(await File.ReadAllBytesAsync(descPath)),
+               var oldDesc = await JsonSerializer.DeserializeAsync(
+                  new MemoryStream(await File.ReadAllBytesAsync(descPath)),
                   DistDescriptionSerializer.Default.DistDescription);
 
                // If any of the reinstall build id is larger than current 
@@ -517,7 +564,7 @@ public partial class MainWindow : Window {
          // Use parallel to speed up.
          var cts = new CancellationTokenSource();
          var downloads = new ConcurrentBag<DistFile>();
-         var checksumCount = 0; 
+         var checksumCount = 0;
          await Parallel.ForEachAsync(desc.files, new ParallelOptions() {
             MaxDegreeOfParallelism = Environment.ProcessorCount,
             CancellationToken = cts.Token
@@ -583,7 +630,13 @@ public partial class MainWindow : Window {
          void IncrementProgressBarAndDownloadSize(double value) {
             var val = Interlocked.Add(ref downloadProgress, (long)value);
             SetProgressBar(val);
-            SetJobName($"{Strings.DownloadUpdateFiles} ({GetByteSizeString(val)} / {GetByteSizeString(totalDownloadSize)})");
+            SetJobName($"{
+               Strings.DownloadUpdateFiles
+            } ({
+               GetByteSizeString(val)
+            } / {
+               GetByteSizeString(totalDownloadSize)
+            })");
          }
 
          var legacyDownloadCount = 0;
@@ -597,7 +650,8 @@ public partial class MainWindow : Window {
             while (true) {
                var bytesRead = 0L;
                try {
-                  await http.DownloadAsync(Path.Combine(source.distributionUrl, f.objectKey), fullPath, check, f.checksum, compress, ct,
+                  await http.DownloadAsync(Path.Combine(source.distributionUrl, f.objectKey), fullPath, check,
+                     f.checksum, compress, ct,
                      tuple => {
                         if (!legacyDownloadProgress) {
                            bytesRead += tuple.BlockRead;
@@ -627,7 +681,13 @@ public partial class MainWindow : Window {
 
             if (legacyDownloadProgress) {
                IncrementProgressBar(1);
-               SetJobName($"{Strings.DownloadUpdateFiles} ({Interlocked.Increment(ref legacyDownloadCount)}/{downloads.Count})");
+               SetJobName($"{
+                  Strings.DownloadUpdateFiles
+               } ({
+                  Interlocked.Increment(ref legacyDownloadCount)
+               }/{
+                  downloads.Count
+               })");
             }
          });
 
@@ -635,7 +695,8 @@ public partial class MainWindow : Window {
             return;
          }
 
-         await File.WriteAllTextAsync(descPath, JsonSerializer.Serialize(desc, DistDescriptionSerializer.Default.DistDescription), cts.Token);
+         await File.WriteAllTextAsync(descPath,
+            JsonSerializer.Serialize(desc, DistDescriptionSerializer.Default.DistDescription), cts.Token);
 
          var passArgument = string.Empty;
          if (!string.IsNullOrWhiteSpace(desc.passBuildId)) {
