@@ -660,7 +660,7 @@ public partial class MainWindow : Window {
                WindowStyle = ProcessWindowStyle.Hidden,
                FileName = "/bin/bash",
                WorkingDirectory = new DirectoryInfo(executable).Parent!.FullName,
-               Arguments = $"-c \"nohup '{executable}' >/dev/null 2>&1 &\""
+               Arguments = $"-c \"nohup '{executable}' {passArgument} >/dev/null 2>&1 &\""
             });
          } else {
             Process.Start(new ProcessStartInfo() {
