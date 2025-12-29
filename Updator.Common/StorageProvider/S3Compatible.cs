@@ -49,13 +49,16 @@ public class S3Compatible : IStorageProvider {
             UseHttp = config.useHttp
         };
 
-        // Set endpoint if specified
+        // Set endpoint if specified (custom endpoint takes priority)
         if (!string.IsNullOrWhiteSpace(config.endpoint)) {
             s3Config.ServiceURL = config.endpoint;
-        }
-
-        // Set region if specified
-        if (!string.IsNullOrWhiteSpace(config.region)) {
+            // When using custom endpoint, don't set RegionEndpoint to avoid conflicts
+            // But we need to set AuthenticationRegion for signing
+            if (!string.IsNullOrWhiteSpace(config.region)) {
+                s3Config.AuthenticationRegion = config.region;
+            }
+        } else if (!string.IsNullOrWhiteSpace(config.region)) {
+            // Only set RegionEndpoint when using standard AWS endpoints
             s3Config.RegionEndpoint = RegionEndpoint.GetBySystemName(config.region);
         }
 

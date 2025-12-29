@@ -20,14 +20,22 @@ if (parsed.Value == null) {
 }
 var opt = parsed.Value;
 
-if (string.IsNullOrWhiteSpace(opt.Cos)) {
+if (string.IsNullOrWhiteSpace(opt.Cos) && string.IsNullOrWhiteSpace(opt.S3)) {
+   Console.WriteLine("Either --cos or --s3 must be provided");
    return -1;
 }
 
-// I use Tencent COS as a distributor
-var cosConfig = await JsonSerializer.DeserializeAsync<TencentCosConfig>(
-   new MemoryStream(Convert.FromBase64String(opt.Cos)));
-var storage = new TencentCos(cosConfig);
+// Initialize storage provider
+IStorageProvider storage;
+if (!string.IsNullOrWhiteSpace(opt.S3)) {
+   var s3Config = await JsonSerializer.DeserializeAsync<S3CompatibleConfig>(
+      new MemoryStream(Convert.FromBase64String(opt.S3)));
+   storage = new S3Compatible(s3Config);
+} else {
+   var cosConfig = await JsonSerializer.DeserializeAsync<TencentCosConfig>(
+      new MemoryStream(Convert.FromBase64String(opt.Cos)));
+   storage = new TencentCos(cosConfig);
+}
 
 // Get projects root from args[0]
 var birthDir = opt.BirthRoot;
@@ -109,7 +117,7 @@ await Task.Run(async () => {
 
    File.WriteAllBytes(Path.Combine(birthDir, project.name, $"{project.name}.zip"), z);
 
-   Console.WriteLine($@"Upload Tencent Cos {project.name}");
+   Console.WriteLine($@"Upload to storage: {project.name}");
    await storage.UploadAsync($"{project.name}.zip", ms);
 
    var sources = File.ReadAllBytes(path);
@@ -121,10 +129,14 @@ await Task.Run(async () => {
 });
 
 Console.WriteLine(@"Refresh CDN");
-await storage.CdnPurgePath();
-await storage.CdnPrefetchObjectKeys(objectKeys);
+if (storage is ICdnRefresh cdnRefresh) {
+   await cdnRefresh.CdnPurgePath();
+   await cdnRefresh.CdnPrefetchObjectKeys(objectKeys);
+} else {
+   Console.WriteLine(@"CDN refresh not supported for this storage provider");
+}
 
-Console.WriteLine(@"Done Tencent Cos");
+Console.WriteLine(@"Done");
 return 0;
 
 namespace Updator.Birth {
@@ -139,6 +151,8 @@ namespace Updator.Birth {
    file class Options {
       [Option("cos", Required = false)]
       public string Cos { get; set; }
+      [Option("s3", Required = false)]
+      public string S3 { get; set; }
       [Option("path", Required = false)]
       public string BirthRoot { get; set; }
       [Option("projectConfig", Required = false)]
