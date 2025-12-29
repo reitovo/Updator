@@ -86,18 +86,8 @@ await Task.Run(async () => {
       zip.Add(new MemoryDataSource(textBytes), hint);
    }
 
-   if (project.platform == "osx") {
-      var exe = new ZipEntry(
-         $"{name}/{name}{projectInfo.suffix}.zip") {
-         IsUnicodeText = true,
-         HostSystem = 3,
-         ExternalFileAttributes = 0x81a4 << 16,
-         Size = bin.Length,
-         Crc = BitConverter.ToInt32(Crc32.Hash(bin))
-      };
-      zip.Add(new MemoryDataSource(bin), exe);
-      AddHint("如更新过程出错，请前往 https://reito.fun 重新下载");
-   } else {
+   // Legacy mode: treat all platforms the same (use executable without .app.zip)
+   if (opt.Legacy || project.platform != "osx") {
       var exe = new ZipEntry(
          $"{name}/{name}{projectInfo.suffix}{(project.platform == "win" ? ".exe" : string.Empty)}") {
          IsUnicodeText = true,
@@ -108,6 +98,18 @@ await Task.Run(async () => {
       };
       zip.Add(new MemoryDataSource(bin), exe);
       AddHint("请解压至任意文件夹使用，不要直接在压缩包中打开！如更新过程出错，请前往 https://reito.fun 重新下载");
+   } else {
+      // Non-legacy macOS mode: use .app.zip
+      var exe = new ZipEntry(
+         $"{name}/{name}{projectInfo.suffix}.zip") {
+         IsUnicodeText = true,
+         HostSystem = 3,
+         ExternalFileAttributes = 0x81a4 << 16,
+         Size = bin.Length,
+         Crc = BitConverter.ToInt32(Crc32.Hash(bin))
+      };
+      zip.Add(new MemoryDataSource(bin), exe);
+      AddHint("如更新过程出错，请前往 https://reito.fun 重新下载");
    }
 
    zip.CommitUpdate();
@@ -159,6 +161,8 @@ namespace Updator.Birth {
       public string ProjectConfig { get; set; }
       [Option("executable", Required = false)]
       public string ExecutablePath { get; set; }
+      [Option("legacy", Required = false, Default = false)]
+      public bool Legacy { get; set; }
    }
 
    file class ProjectInfo {

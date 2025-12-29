@@ -134,7 +134,7 @@ jobs:
           
           cp "${{ env.PLIST_FILE }}" "${{ env.APP_PACKAGE_NAME }}/Contents/Info.plist"
           cp "${{ env.ICONS_FILE }}" "${{ env.APP_PACKAGE_NAME }}/Contents/Resources/Icon.icns"
-          
+
       - name: Setup Keychain
         run: |
           security create-keychain -p "${{ secrets.KEYCHAIN_PASSWORD }}" build.keychain
