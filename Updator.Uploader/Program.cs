@@ -85,6 +85,7 @@ logger.LogInformation($"Providers: {config.storage} {config.checksum} {config.co
 IStorageProvider storage = config.storage switch {
    "cos" => new TencentCos(config.cos),
    "azure-blobs" => new AzureBlobs(config.azure),
+   "s3" => new S3Compatible(config.s3),
    _ => null
 };
 if (storage == null) {
@@ -97,6 +98,7 @@ var localFileCheck = new ChecksumLocalCrc64();
 IChecksumProvider check = config.checksum switch {
    "crc64" => new ChecksumCosCrc64(),
    "azure-md5" => new ChecksumAzureMd5(),
+   "s3-md5" => new ChecksumS3Md5(),
    _ => null
 };
 if (check == null) {

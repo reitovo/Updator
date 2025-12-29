@@ -24,6 +24,7 @@
       <PackageReference Include="Tencent.QCloud.Cos.Sdk" Version="5.4.34" />
       <PackageReference Include="TencentCloudSDK.Cdn" Version="3.0.680" />
       <PackageReference Include="TencentCloudSDK.Teo" Version="3.0.929" />
+      <PackageReference Include="AWSSDK.S3" Version="3.7.411.5" />
     </ItemGroup>
 
 </Project>

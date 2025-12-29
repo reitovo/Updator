@@ -2,7 +2,7 @@
 Very simple but straight forward application updater!
 
 The project contains:
-- `uploader` for uploading releases to cloud, currently only `tencent-cloud-cos` is supported, but it is easy to support more.
+- `uploader` for uploading releases to cloud, currently supports `tencent-cloud-cos`, `azure-blobs`, and `s3-compatible` storage, with CDN refresh support, but it is easy to support more.
 - `downloader` for downloading releases, currently it use http(s) to download from links.
 - `publisher` for publish downloader itself. Could be helpful if you need to publish your own downloader.
 
@@ -70,7 +70,51 @@ One can extend the ability of this app by adding providers to `StorageProvider`,
 
 Currently supported providers:
 - `cos`: Tencent cloud COS, also support refreshing CDN if you use such service.
-- `azure-blobs`: Azure Storage Blobs，support Front Door Endpoint refresh.
+- `azure-blobs`: Azure Storage Blobs, support Front Door Endpoint refresh.
+- `s3`: S3 Compatible (supports AWS S3, MinIO, Wasabi, and all S3-compatible storage services)
+
+### S3 Compatible Configuration Examples
+
+AWS S3:
+```json
+{
+  "storage": "s3",
+  "checksum": "s3-md5",
+  "s3": {
+    "endpoint": "https://s3.amazonaws.com",
+    "region": "us-east-1",
+    "accessKeyId": "YOUR-ACCESS-KEY-ID",
+    "secretAccessKey": "YOUR-SECRET-ACCESS-KEY",
+    "bucket": "your-bucket-name",
+    "objectKeyPrefix": "myapp/release/",
+    "forcePathStyle": false,
+    "useHttp": false
+  }
+}
+```
+
+MinIO (or other S3-compatible services):
+```json
+{
+  "storage": "s3",
+  "checksum": "s3-md5",
+  "s3": {
+    "endpoint": "http://localhost:9000",
+    "region": "us-east-1",
+    "accessKeyId": "minioadmin",
+    "secretAccessKey": "minioadmin",
+    "bucket": "your-bucket-name",
+    "objectKeyPrefix": "myapp/release/",
+    "forcePathStyle": true,
+    "useHttp": true
+  }
+}
+```
+
+Notes:
+- S3 uses `s3-md5` as the checksum method (based on S3 ETag)
+- `forcePathStyle`: Set to `true` for MinIO and similar services, `false` for AWS S3
+- `useHttp`: Only set to `true` for local testing, use HTTPS in production
 
 ## Downloader
 It reads `sources.json` to download from specified url. Then downloads the `<DISTRIBUTION-URL>/__description.json` to get all metadata about the distribution, compare and download all files needed.

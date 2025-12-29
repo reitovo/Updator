@@ -38,6 +38,8 @@ public class UploadConfig {
    public TencentCosConfig cos { get; set; }
    // azure storage blobs config ("azure")
    public AzureBlobsConfig azure { get; set; }
+   // s3 compatible storage config ("s3")
+   public S3CompatibleConfig s3 { get; set; }
 
    // pass build id to executable as argument --<passBuildId>
    public string passBuildId { get; set; }

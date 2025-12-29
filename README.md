@@ -6,7 +6,7 @@
 [English](README.en.md)
 
 本项目包含:
-- `Updator.Uploader` 用来上传你的应用至一个云端，目前支持`腾讯云COS`且支持CDN刷新，采用接口设计，也可以很快地为其他云端实现上传机制。
+- `Updator.Uploader` 用来上传你的应用至一个云端，目前支持`腾讯云COS`、`Azure Blobs`、`S3 Compatible`且支持CDN刷新，采用接口设计，也可以很快地为其他云端实现上传机制。
 - `Updator.Downloader.CLI` 用简易控制台界面，来提供给用户下载你的应用，目前使用纯HTTP(S)下载，因为云服务对象储存通常都是这种方式
 - `Updator.Downloader.UI` 使用 AvaloniaUI 制作了一个简易的界面，提高美观性
 
@@ -91,6 +91,50 @@
 当前支持的云服务：
 - `cos`: 腾讯云 COS，支持 CDN 刷新
 - `azure-blobs`: Azure Storage Blobs，支持 Front Door Endpoint 刷新
+- `s3`: S3 Compatible（支持 AWS S3、MinIO、Wasabi 等所有 S3 兼容存储）
+
+### S3 Compatible 配置示例
+
+AWS S3:
+```json
+{
+  "storage": "s3",
+  "checksum": "s3-md5",
+  "s3": {
+    "endpoint": "https://s3.amazonaws.com",
+    "region": "us-east-1",
+    "accessKeyId": "YOUR-ACCESS-KEY-ID",
+    "secretAccessKey": "YOUR-SECRET-ACCESS-KEY",
+    "bucket": "your-bucket-name",
+    "objectKeyPrefix": "myapp/release/",
+    "forcePathStyle": false,
+    "useHttp": false
+  }
+}
+```
+
+MinIO（或其他 S3 兼容服务）:
+```json
+{
+  "storage": "s3",
+  "checksum": "s3-md5",
+  "s3": {
+    "endpoint": "http://localhost:9000",
+    "region": "us-east-1",
+    "accessKeyId": "minioadmin",
+    "secretAccessKey": "minioadmin",
+    "bucket": "your-bucket-name",
+    "objectKeyPrefix": "myapp/release/",
+    "forcePathStyle": true,
+    "useHttp": true
+  }
+}
+```
+
+注意：
+- S3 使用 `s3-md5` 作为校验和方法（基于 S3 的 ETag）
+- `forcePathStyle`: MinIO 等服务需要设置为 `true`，AWS S3 建议设置为 `false`
+- `useHttp`: 仅在本地测试时设置为 `true`，生产环境应使用 HTTPS
 
 ## Downloader 
 程序读取 `sources.json` 去下载你的应用。

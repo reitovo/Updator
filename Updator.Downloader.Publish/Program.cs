@@ -25,8 +25,14 @@ var opt = parsed.Value;
 // Read tokens from file provided via args[1]
 var config = await JsonSerializer.DeserializeAsync<Config>(new MemoryStream(Convert.FromBase64String(opt.Config)));
 
-// I use Tencent COS as a distributor
-var storage = new TencentCos(config.cos);
+// Initialize storage provider based on config
+IStorageProvider storage = (config.storageType ?? "cos") switch {
+   "cos" => new TencentCos(config.cos),
+   "azure" or "azure-blobs" => new AzureBlobs(config.azure),
+   "s3" => new S3Compatible(config.s3),
+   _ => throw new Exception($"Unknown storage type: {config.storageType}")
+};
+ICdnRefresh cdnRefresh = storage as ICdnRefresh;
 
 // Local function for publish a runtime
 async Task PublishWin() {
@@ -109,17 +115,21 @@ if (opt.Legacy) {
 }
 
 async Task Upload(string name, byte[] data) {
-   Console.WriteLine($@"Upload Tencent Cos {name}");
+   Console.WriteLine($@"Upload to {config.storageType ?? "cos"}: {name}");
    await using var ms = new MemoryStream(data);
    await storage.UploadAsync(name, ms);
    objectKeys.Add(name);
 }
 
 Console.WriteLine(@"Refresh CDN");
-await storage.CdnPurgePath();
-await storage.CdnPrefetchObjectKeys(objectKeys);
+if (cdnRefresh != null) {
+   await cdnRefresh.CdnPurgePath();
+   await cdnRefresh.CdnPrefetchObjectKeys(objectKeys);
+} else {
+   Console.WriteLine(@"CDN refresh not supported for this storage provider");
+}
 
-Console.WriteLine(@"Done Tencent Cos");
+Console.WriteLine(@"Done");
 return 0;
 
 namespace Updator.Downloader.Publish {
