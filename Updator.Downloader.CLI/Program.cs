@@ -336,6 +336,8 @@ await AnsiConsole.Progress()
       // Restore checksum provider
       IChecksumProvider check = desc.checksum switch {
          "crc64" => new ChecksumCosCrc64(),
+         "azure-md5" => new ChecksumAzureMd5(),
+         "s3-md5" => new ChecksumS3Md5(),
          _ => null
       };
       if (check == null) {

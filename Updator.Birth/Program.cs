@@ -64,6 +64,9 @@ await Task.Run(async () => {
    var bin = await File.ReadAllBytesAsync(opt.ExecutablePath);
    Console.WriteLine($@"Using executable: {opt.ExecutablePath}");
 
+   // Read sources.json for legacy mode
+   var sourcesJson = await File.ReadAllBytesAsync(path);
+
    using var ms = new MemoryStream();
    var zip = ZipFile.Create(ms);
 
@@ -97,6 +100,17 @@ await Task.Run(async () => {
          Crc = BitConverter.ToInt32(Crc32.Hash(bin))
       };
       zip.Add(new MemoryDataSource(bin), exe);
+      
+      // Add sources.json in legacy mode
+      var sourcesEntry = new ZipEntry($"{name}/sources.json") {
+         IsUnicodeText = true,
+         HostSystem = 3,
+         ExternalFileAttributes = 0x81a4 << 16,
+         Size = sourcesJson.Length,
+         Crc = BitConverter.ToInt32(Crc32.Hash(sourcesJson))
+      };
+      zip.Add(new MemoryDataSource(sourcesJson), sourcesEntry);
+      
       AddHint("请解压至任意文件夹使用，不要直接在压缩包中打开！如更新过程出错，请前往 https://reito.fun 重新下载");
    } else {
       // Non-legacy macOS mode: use .app.zip
