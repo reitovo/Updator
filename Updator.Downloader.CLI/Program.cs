@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Security.AccessControl;
 using System.Security.Cryptography;
 using System.Text;
+using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Spectre.Console;
@@ -30,6 +31,28 @@ void Exec(string cmd) {
 
    process.Start();
    process.WaitForExit();
+}
+
+void EnsureExecutable(string path) {
+   if (OperatingSystem.IsWindows())
+      return;
+   if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+      return;
+   try {
+      var mode = File.GetUnixFileMode(path);
+      var need = UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute;
+      if ((mode & need) != need) {
+         File.SetUnixFileMode(path, mode | need);
+      }
+   } catch (PlatformNotSupportedException) {
+      try {
+         Exec($"chmod +x {path}");
+      } catch {
+         // ignore
+      }
+   } catch {
+      // ignore
+   }
 }
 
 // Set console encoding to utf-8
@@ -452,7 +475,18 @@ await AnsiConsole.Progress()
       File.WriteAllText(descPath, JsonSerializer.Serialize(desc, DistDescriptionSerializer.Default.DistDescription));
 
       if (!OperatingSystem.IsWindows()) {
-         Exec($"chmod +x {executable}");
+         EnsureExecutable(executable);
+
+         if (desc.executableFiles is { Count: > 0 }) {
+            foreach (var cfg in desc.executableFiles) {
+               try {
+                  var full = Path.Combine(distRoot, cfg);
+                  EnsureExecutable(full);
+               } catch (Exception ex) {
+                  AnsiConsole.WriteException(ex);
+               }
+            }
+         }
       }
 
       var passArgument = string.Empty;
@@ -462,15 +496,65 @@ await AnsiConsole.Progress()
 
       // Start the payload executable
       try {
-         var ret = Process.Start(new ProcessStartInfo() {
-            FileName = executable,
-            WorkingDirectory = new DirectoryInfo(executable).Parent!.FullName,
-            Arguments = passArgument,
-            UseShellExecute = true
-         });
+         ProcessStartInfo startInfo;
+         
+         if (!OperatingSystem.IsWindows()) {
+            // Check launch mode from sources.json (default: "nohup")
+            var launchMode = sources.launchMode ?? "nohup";
+            
+            if (launchMode == "exec") {
+               // Exec mode: child process, wait and kill on parent exit
+               startInfo = new ProcessStartInfo() {
+                  FileName = executable,
+                  WorkingDirectory = new DirectoryInfo(executable).Parent!.FullName,
+                  Arguments = passArgument,
+                  UseShellExecute = false
+               };
+            } else {
+               // Default nohup mode (background process)
+               startInfo = new ProcessStartInfo() {
+                  UseShellExecute = false,
+                  CreateNoWindow = true,
+                  FileName = "/bin/bash",
+                  WorkingDirectory = new DirectoryInfo(executable).Parent!.FullName,
+                  Arguments = $"-c \"nohup '{executable}' {passArgument} >/dev/null 2>&1 &\""
+               };
+            }
+         } else {
+            // Windows
+            startInfo = new ProcessStartInfo() {
+               FileName = executable,
+               WorkingDirectory = new DirectoryInfo(executable).Parent!.FullName,
+               Arguments = passArgument,
+               UseShellExecute = true
+            };
+         }
+         
+         var ret = Process.Start(startInfo);
 
-         if (ret.HasExited) {
-            AnsiConsole.MarkupLine(Strings.StartFailed);
+         if (ret != null) {
+            if (!OperatingSystem.IsWindows() && (sources.launchMode ?? "nohup") == "exec") {
+               AnsiConsole.MarkupLine($"[green]启动子进程 PID: {ret.Id}[/]");
+
+               AppDomain.CurrentDomain.ProcessExit += (_, _) => {
+                  try {
+                     if (!ret.HasExited) {
+                        AnsiConsole.MarkupLine($"[yellow]父进程退出，终止子进程 PID: {ret.Id}[/]");
+                        ret.Kill(true);
+                     }
+                  } catch {
+                     // Ignore errors during cleanup
+                  }
+               };
+
+               // Wait synchronously in CLI to mirror requested behavior
+               ret.WaitForExit();
+               AnsiConsole.MarkupLine("[yellow]子进程已退出[/]");
+            } else {
+               if (ret.HasExited) {
+                  AnsiConsole.MarkupLine(Strings.StartFailed);
+               }
+            }
          }
       } catch (Exception ex) {
          AnsiConsole.WriteException(ex);

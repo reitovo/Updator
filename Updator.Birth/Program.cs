@@ -111,7 +111,7 @@ await Task.Run(async () => {
       };
       zip.Add(new MemoryDataSource(sourcesJson), sourcesEntry);
       
-      AddHint("请解压至任意文件夹使用，不要直接在压缩包中打开！\n对于 macOS 需要在隐私与安全性允许，并按提示手动选择打开 sources.json \n如更新过程出错，请前往 https://reito.fun 重新下载");
+      AddHint("请解压至任意文件夹使用，不要直接在压缩包中打开！\n对于 macOS 用户，需要在隐私与安全性允许，并按提示手动选择打开文件夹里的 sources.json \n如更新过程出错，请前往 https://reito.fun 重新下载");
    } else {
       // Non-legacy macOS mode: use .app.zip
       var exe = new ZipEntry(

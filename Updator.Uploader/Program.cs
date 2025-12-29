@@ -124,6 +124,7 @@ var desc = new DistDescription {
    buildId = config.buildId,
    channel = config.channel,
    executable = config.executable,
+   executableFiles = config.executableFiles?.ToList() ?? new(),
    compression = config.compression,
    checksum = config.checksum,
    updateLogs = config.updateLogs?.ToList(),

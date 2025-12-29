@@ -34,6 +34,11 @@ public class Sources {
    // Available sources, you can predefine `release`, `debug` channels and let user to enable one of them
    // if the user wants to switch channel.
    public List<Source> sources { get; set; }
+   
+   // Launch mode for non-Windows platforms: "nohup" (default) or "exec"
+   // "nohup": launch in background using nohup (process continues after downloader closes)
+   // "exec": launch directly using shell execute (process may stop when downloader closes)
+   public string launchMode { get; set; } = "nohup";
 }
 
 [JsonSourceGenerationOptions(WriteIndented = true)]

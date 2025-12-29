@@ -56,6 +56,9 @@ public class DistDescription {
 
    public string osxAppBundle { get; set; }
 
+   // Additional executable files that need +x on non-Windows
+   public List<string> executableFiles { get; set; } = new();
+
    // Uploaded files
    public List<DistFile> files { get; set; } = new();
 

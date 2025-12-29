@@ -30,6 +30,8 @@ public class UploadConfig {
    public string compression { get; set; } = "brotli";
    // The execueable relative path (`bin/program.exe`)
    public string executable { get; set; }
+   // Extra executable files that need chmod +x on non-Windows
+   public List<string> executableFiles { get; set; } = new();
    // Checksum provider
    public string checksum { get; set; } = "crc64";
    // The name of storage provider

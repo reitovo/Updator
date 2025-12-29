@@ -35,6 +35,37 @@ using SourcesSerializer = Updator.Common.Downloader.SourcesSerializer;
 namespace Updator.Downloader.UI;
 
 public partial class MainWindow : Window {
+   private static readonly string LastSourcesPathFile =
+      Path.Combine(App.AppLocalDataFolder, "last-sources-path.txt");
+
+   private static void EnsureExecutable(string path) {
+      if (OperatingSystem.IsWindows())
+         return;
+      if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+         return;
+      try {
+         var mode = File.GetUnixFileMode(path);
+         var need = UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute;
+         if ((mode & need) != need) {
+            File.SetUnixFileMode(path, mode | need);
+         }
+      } catch (PlatformNotSupportedException) {
+         // Fallback to chmod
+         try {
+            var escaped = path.Replace("'", "'\"'\"'");
+            Process.Start(new ProcessStartInfo {
+               UseShellExecute = false,
+               FileName = "/bin/bash",
+               Arguments = $"-c \"chmod +x '{escaped}'\""
+            })?.WaitForExit();
+         } catch {
+            // ignore
+         }
+      } catch {
+         // ignore other errors
+      }
+   }
+
    public MainWindow() {
       InitializeComponent();
    }
@@ -228,19 +259,59 @@ public partial class MainWindow : Window {
             : Path.Combine(App.AppLocalDataFolder, $"sources-{sources.defaultName}.json");
          var sourcesPath = appDataSourcesPath;
 
-         if (File.Exists(sourcesPath)) {
+         // 1) try last-used path
+         if (sources == null && File.Exists(LastSourcesPathFile)) {
+            try {
+               var last = await File.ReadAllTextAsync(LastSourcesPathFile);
+               if (!string.IsNullOrWhiteSpace(last) && File.Exists(last)) {
+                  sourcesPath = last;
+                  Environment.CurrentDirectory = Path.GetDirectoryName(Path.GetFullPath(sourcesPath))!;
+                  sources = JsonSerializer.Deserialize(new MemoryStream(await File.ReadAllBytesAsync(sourcesPath)),
+                     SourcesSerializer.Default.Sources);
+                  App.AppLog.LogInformation($"使用上次的源：{sourcesPath}");
+               }
+            } catch {
+               // ignore
+            }
+         }
+
+         // 2) try cached/bundled path
+         if (sources == null && File.Exists(sourcesPath)) {
             sources = JsonSerializer.Deserialize(new MemoryStream(await File.ReadAllBytesAsync(sourcesPath)),
                SourcesSerializer.Default.Sources);
             App.AppLog.LogInformation($"本地缓存源：{sourcesPath}");
          }
 
+         // 3) file picker
          if (sources == null) {
-            // Finally, try file picker
+            IStorageFolder startFolder = null;
+            try {
+               if (File.Exists(LastSourcesPathFile)) {
+                  var last = await File.ReadAllTextAsync(LastSourcesPathFile);
+                  var lastDir = Path.GetDirectoryName(last);
+                  if (!string.IsNullOrWhiteSpace(lastDir)) {
+                     startFolder = await StorageProvider.TryGetFolderFromPathAsync(lastDir);
+                  }
+               }
+               // Fallback: Downloads directory
+               if (startFolder == null) {
+                  var downloadsPath = Path.Combine(
+                     Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                     "Downloads");
+                  if (Directory.Exists(downloadsPath)) {
+                     startFolder = await StorageProvider.TryGetFolderFromPathAsync(downloadsPath);
+                  }
+               }
+            } catch {
+               // ignore
+            }
+
             var openFileDialog = await Dispatcher.UIThread.Invoke(async () => await StorageProvider.OpenFilePickerAsync(
                new FilePickerOpenOptions() {
                   FileTypeFilter = new[]
                      { new FilePickerFileType("sources.json") { Patterns = new[] { "sources.json" } } },
-                  Title = Strings.OpenSourcesFile
+                  Title = Strings.OpenSourcesFile,
+                  SuggestedStartLocation = startFolder
                }
             ));
             var first = openFileDialog.FirstOrDefault();
@@ -250,6 +321,11 @@ public partial class MainWindow : Window {
                sources = JsonSerializer.Deserialize(new MemoryStream(await File.ReadAllBytesAsync(sourcesPath)),
                   SourcesSerializer.Default.Sources);
                App.AppLog.LogInformation($"用户选择源：{sourcesPath}");
+               try {
+                  await File.WriteAllTextAsync(LastSourcesPathFile, sourcesPath);
+               } catch {
+                  // ignore
+               }
             } else {
                Dispatcher.UIThread.InvokeShutdown();
             }
@@ -715,15 +791,68 @@ public partial class MainWindow : Window {
          // Start the payload executable  
          var executable = Path.Combine(distRoot, desc.executable);
          if (!OperatingSystem.IsWindows()) {
-            Exec($"chmod +x '{executable}'");
-            Process.Start(new ProcessStartInfo {
-               UseShellExecute = false,
-               CreateNoWindow = true,
-               WindowStyle = ProcessWindowStyle.Hidden,
-               FileName = "/bin/bash",
-               WorkingDirectory = new DirectoryInfo(executable).Parent!.FullName,
-               Arguments = $"-c \"nohup '{executable}' {passArgument} >/dev/null 2>&1 &\""
-            });
+            EnsureExecutable(executable);
+
+            // chmod extra executables
+            if (desc.executableFiles is { Count: > 0 }) {
+               foreach (var cfg in desc.executableFiles) {
+                  try {
+                     var full = Path.Combine(distRoot, cfg);
+                     EnsureExecutable(full);
+                  } catch (Exception ex) {
+                     App.AppLog.LogError(ex, $"chmod 失败: {cfg}");
+                  }
+               }
+            }
+            
+            // Check launch mode from sources.json (default: "nohup")
+            var launchMode = sources.launchMode ?? "nohup";
+            
+            if (launchMode == "exec") {
+               // Exec mode: start as child process; wait and kill on parent exit
+               var startInfo = new ProcessStartInfo {
+                  UseShellExecute = false,
+                  FileName = executable,
+                  WorkingDirectory = new DirectoryInfo(executable).Parent!.FullName,
+                  Arguments = passArgument
+               };
+
+               var proc = Process.Start(startInfo);
+               if (proc == null) {
+                  Popup.Exception(Strings.RequestFailed);
+                  return;
+               }
+
+               App.AppLog.LogInformation($"启动子进程 PID: {proc.Id}");
+
+               AppDomain.CurrentDomain.ProcessExit += (_, _) => {
+                  try {
+                     if (!proc.HasExited) {
+                        App.AppLog.LogInformation($"父进程退出，终止子进程 PID: {proc.Id}");
+                        proc.Kill(true);
+                     }
+                  } catch (Exception ex) {
+                     App.AppLog.LogError(ex, "终止子进程失败");
+                  }
+               };
+
+               try {
+                  await proc.WaitForExitAsync();
+                  App.AppLog.LogInformation("子进程已退出");
+               } catch (Exception ex) {
+                  App.AppLog.LogError(ex, "等待子进程退出失败");
+               }
+            } else {
+               // Default nohup mode (background process)
+               Process.Start(new ProcessStartInfo {
+                  UseShellExecute = false,
+                  CreateNoWindow = true,
+                  WindowStyle = ProcessWindowStyle.Hidden,
+                  FileName = "/bin/bash",
+                  WorkingDirectory = new DirectoryInfo(executable).Parent!.FullName,
+                  Arguments = $"-c \"nohup '{executable}' {passArgument} >/dev/null 2>&1 &\""
+               });
+            }
          } else {
             Process.Start(new ProcessStartInfo() {
                FileName = executable,
